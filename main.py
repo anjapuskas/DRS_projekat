@@ -6,12 +6,14 @@ korisnici = []
 
 @app.route("/")
 def start():
-    return render_template("Registracija.html")
+    return render_template("Login.html")
 
 
-@app.route("/Login", methods=['post', 'get'])
-def login():
-     return render_template('Login.html')
+@app.route("/PrikaziRegistraciju", methods=['POST', 'GET'])
+def prikaziRegistraciju():
+     return render_template('Registracija.html')
+
+
 
 
 
@@ -49,6 +51,21 @@ def registracija():
     return render_template("Login.html")
 
 
+
+@app.route("/Login", methods=['GET', 'POST'])
+def login():
+    global korisnici
+
+    email = request.form['inputEmail']
+    lozinka = request.form['inputLozinka']
+
+    for k in korisnici:
+        if k["email"] == email and k["lozinka"] == lozinka:
+            poruka = "Uspjesno logovanje!"
+            return render_template("Login.html", errormsg=poruka)
+        else:
+            poruka = "Nespravan email ili lozinka!"
+    return render_template("Login.html", errormsg=poruka)
 
 
 if __name__ == '__main__':
