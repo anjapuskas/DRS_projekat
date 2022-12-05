@@ -1,10 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+     <meta charset="UTF-8">
     <title>Modifikacija</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+
+    <link href="../static/content/jumbotron.css" rel="stylesheet">
+    <link href="../static/content/register.css" rel="stylesheet">
+    <script src="../static/scripts/jquery-1.11.2.js"></script>
+    <script src="../static/scripts/register.js"></script>
 </head>
 <body>
+    <div class="jumbotron">
+    <h2>Modifikacija</h2>
+
+    <p>
+        {{errormsg}}
+    </p>
+
+    <form class="form-signin" action="/PrikaziModifikaciju" method="post">
+
+        <label for="inputIme" class="sr-only">Ime:</label>
+        <input type="text" name="inputIme" id="inputIme" class="form-control" placeholder="Ime" required autofocus></br>
+
+       <label for="inputPrezime" class="sr-only">Prezime:</label>
+        <input type="text" name="inputPrezime" id="inputPrezime" class="form-control" placeholder="Prezime" required autofocus></br>
+
+        <label for="inputAdresa" class="sr-only">Adresa:</label>
+        <input type="text" name="inputAdresa" id="inputAdresa" class="form-control" placeholder="Adresa" required autofocus></br>
+
+        <label for="inputGrad" class="sr-only">Grad:</label>
+        <input type="text" name="inputGrad" id="inputGrad" class="form-control" placeholder="Grad" required autofocus></br>
+
+
+        <label for="inputDrzava" class="sr-only">Drzava:</label>
+        <input type="text" name="inputDrzava" id="inputDrzava" class="form-control" placeholder="Drzava" required autofocus></br>
+
+
+        <label for="inputBrojTelefona" class="sr-only">Broj telefona:</label>
+        <input type="number" name="inputBrojTelefona" id="inputBrojTelefona" class="form-control" placeholder="Broj telefona" required autofocus></br>
+
+
+         <label for="inputEmail" class="sr-only">Email:</label>
+        <input type="email" name="inputEmail" id="inputEmail" class="form-control" placeholder="Email" required autofocus></br>
+
+
+         <label for="inputLozinka" class="sr-only">Lozinka:</label>
+        <input type="password" name="inputLozinka" id="inputLozinka" class="form-control" placeholder="Lozinka" required autofocus></br>
+
+
+        <input type="submit" value="Modifikuj"></br>
+    </form>
+</div>
+
 
 </body>
 </html>
