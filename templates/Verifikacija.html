@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verifikacija</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+
+    <link href="../static/content/jumbotron.css" rel="stylesheet">
+    <link href="../static/content/register.css" rel="stylesheet">
+    <script src="../static/scripts/jquery-1.11.2.js"></script>
+    <script src="../static/scripts/register.js"></script>
+</head>
+<body>
+
+
+<div class="jumbotron">
+    <h2>Verifikacija</h2>
+    <p>
+        {{errormsg}}
+    </p>
+
+    <form class="form-signin" action="/Verifikacija" method="post">
+
+      <input type="hidden" name="inputEmail" id="inputEmail" value="{{email}}" class="form-control">
+
+        <label for="inputIme" class="src-only"> Ime </label>
+      <input type="text" name="inputIme" id="inputIme" class="form-control" placeholder="Ime" required autofocus>
+
+      <label for="inputBrojKartice" class="src-only"> Broj Kartice </label>
+      <input type="number" name="inputBrojKartice" id="inputBrojKartice" class="form-control" placeholder="Broj Kartice" required autofocus>
+
+      <label for="inputDatum" class="src-only"> Datum </label>
+      <input type="text" name="inputDatum" id="inputDatum" class="form-control" placeholder="Datum isteka kartice u formatu mm/dd" required autofocus>
+
+        <label for="inputKod" class="src-only"> Kod </label>
+      <input type="number" name="inputKod" id="inputKod" class="form-control" placeholder="Sigurnosni kod" required autofocus>
+
+        <input type="submit" value="Verifikuj se"></br>
+    </form>
+
+</div>
+
+
+
+
+</body>
+</html>
