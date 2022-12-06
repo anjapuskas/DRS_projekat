@@ -61,11 +61,45 @@ def login():
 
     for k in korisnici:
         if k["email"] == email and k["lozinka"] == lozinka:
-            poruka = "Uspjesno logovanje!"
-            return render_template("Login.html", errormsg=poruka)
+            #poruka = "Uspjesno logovanje!"
+            return render_template("Verifikacija.html")
         else:
             poruka = "Nespravan email ili lozinka!"
     return render_template("Login.html", errormsg=poruka)
+
+
+@app.route("/Verifikacija", methods=['GET', 'POST'])
+def verifikacija():
+    global korisnici
+
+    ime = request.form['inputIme']
+    brojKartice = request.form['inputBrojKartice']
+    datum = request.form['inputDatum']
+    kod = request.form['inputKod']
+    email = request.form['inputEmail']
+
+    ime1 = ""
+
+    for k in korisnici:
+        if k["email"] == email:
+            ime1 = k["ime"]
+
+    if ime1 == "":
+        poruka = "Korisnik ne postoji u bazi"
+        return render_template("Verifikacija.html", email = email, errormsg = poruka)
+
+    if ime == ime1 and brojKartice == "4242424242424242" and datum == "02/23" and kod == 123:
+        for k in korisnici:
+            if k[email] == email:
+                k["verifikovan"] = 1
+                session["k"] = email
+                #ovdje se treba sacuvati u fajl
+                poruka = "Uspjesno verifikovan"
+                return render_template("Verifikacija.html", k = k ,errormsg = poruka)
+
+
+    poruka = "Neuspjesna verifikacija - pokusajte ponovo"
+    return render_template("Verifikacija.html", errormsg=poruka)
 
 
 if __name__ == '__main__':
