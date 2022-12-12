@@ -1,8 +1,16 @@
 from flask import Flask, request, session, render_template
+from flask_mysqldb import MySQL
+
 app = Flask(__name__)
 
-korisnici = []
+app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_PASSWORD'] = 'admin'
+app.config['MYSQL_DB'] = 'baza_drs'
+app.config['MYSQL_CURSORCLASS'] = 'DictCursor'  # da nam baza vraca dictionary sa header-ima iz baze podataka
 
+mysql = MySQL(app)
+app.secret_key = "123"
 
 @app.route("/")
 def start():
@@ -12,10 +20,6 @@ def start():
 @app.route("/PrikaziRegistraciju", methods=['POST', 'GET'])
 def prikaziRegistraciju():
      return render_template('Registracija.html')
-
-
-
-
 
 @app.route("/Registracija", methods=['GET', 'POST'])
 def registracija():
@@ -30,76 +34,60 @@ def registracija():
     email = request.form['inputEmail']
     lozinka = request.form['inputLozinka']
 
-    for k in korisnici:
-        if k["email"] == email:
-            poruka = "Korisnik sa datim email-om vec posotji!"
-            return render_template("Registracija.html", errormsg = poruka)
 
+    cursor = mysql.connection.cursor()
+    cursor.execute(''' INSERT INTO korisnik (ime, prezime, adresa, grad, drzava, brojTelefona, email, lozinka) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)''',(ime, prezime, adresa, grad, drzava, brojTelefona, email, lozinka))
+    mysql.connection.commit()
+    cursor.close()
 
-    k = {
-        "ime" : ime,
-        "prezime" : prezime,
-        "adresa" : adresa,
-        "grad" : grad,
-        "drzava" : drzava,
-        "brojTelefona" : brojTelefona,
-        "email" : email,
-        "lozinka" : lozinka
-    }
-
-    korisnici.append(k)
     return render_template("Login.html")
-
 
 
 @app.route("/Login", methods=['GET', 'POST'])
 def login():
-    global korisnici
-
     email = request.form['inputEmail']
     lozinka = request.form['inputLozinka']
 
-    for k in korisnici:
-        if k["email"] == email and k["lozinka"] == lozinka:
-            #poruka = "Uspjesno logovanje!"
-            return render_template("Verifikacija.html")
-        else:
-            poruka = "Nespravan email ili lozinka!"
+    user = getUser(email)
+
+    if user != None and user["email"] == email and user["lozinka"] == lozinka:
+        #poruka = "Uspjesno logovanje!"
+        session["email"] = email
+        return render_template("Verifikacija.html")
+    else:
+        poruka = "Nespravan email ili lozinka!"
     return render_template("Login.html", errormsg=poruka)
 
 
 @app.route("/Verifikacija", methods=['GET', 'POST'])
 def verifikacija():
-    global korisnici
-
     ime = request.form['inputIme']
     brojKartice = request.form['inputBrojKartice']
     datum = request.form['inputDatum']
     kod = request.form['inputKod']
-    email = request.form['inputEmail']
+    email = session["email"]
 
-    ime1 = ""
+    user = getUser(email)
 
-    for k in korisnici:
-        if k["email"] == email:
-            ime1 = k["ime"]
+    print(email)
+    print(user != None)
 
-    if ime1 == "":
-        poruka = "Korisnik ne postoji u bazi"
-        return render_template("Verifikacija.html", email = email, errormsg = poruka)
-
-    if ime == ime1 and brojKartice == "4242424242424242" and datum == "02/23" and kod == 123:
-        for k in korisnici:
-            if k[email] == email:
-                k["verifikovan"] = 1
-                session["k"] = email
-                #ovdje se treba sacuvati u fajl
-                poruka = "Uspjesno verifikovan"
-                return render_template("Verifikacija.html", k = k ,errormsg = poruka)
+    if user != None and user["ime"] == ime and brojKartice == "4242424242424242" and datum == "02/23" and kod == "123":
+        #user["verifikovan"] = 1
+        poruka = "Uspesno logovanje!"
+        return render_template("Verifikacija.html", errormsg=poruka)
+    else:
+        poruka = "Neuspesno logovanje"
+        return render_template("Verifikacija.html", errormsg=poruka)
 
 
-    poruka = "Neuspjesna verifikacija - pokusajte ponovo"
-    return render_template("Verifikacija.html", errormsg=poruka)
+def getUser(email: str) -> dict:
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT * FROM korisnik WHERE email = %s", (email,))
+    user = cursor.fetchone()
+    cursor.close()
+    return user
+
 
 
 if __name__ == '__main__':
