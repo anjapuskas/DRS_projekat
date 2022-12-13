@@ -14,13 +14,16 @@
     <script src="../static/scripts/register.js"></script>
 </head>
 <body>
+
+
     <div class="jumbotron">
+
+
+   <p>
+         EMAIL :   {{korisnik["email"]}} </br>
+   </p>
+
     <h2>Modifikacija</h2>
-
-    <p>
-        {{errormsg}}
-    </p>
-
     <form class="form-signin" action="/IzmeniProfil" method="post">
 
         <label for="inputIme" class="sr-only">Ime:</label>
@@ -40,12 +43,11 @@
         <input type="text" name="inputDrzava" id="inputDrzava" class="form-control" placeholder="Drzava" required autofocus></br>
 
 
+
+
         <label for="inputBrojTelefona" class="sr-only">Broj telefona:</label>
         <input type="number" name="inputBrojTelefona" id="inputBrojTelefona" class="form-control" placeholder="Broj telefona" required autofocus></br>
 
-
-        <label for="inputEmail" class="sr-only">Email:</label>
-        <input type="email" name="inputEmail" id="inputEmail" class="form-control" placeholder="Email" required autofocus></br>
 
          <label for="inputLozinka" class="sr-only">Lozinka:</label>
         <input type="password" name="inputLozinka" id="inputLozinka" class="form-control" placeholder="Lozinka" required autofocus></br>

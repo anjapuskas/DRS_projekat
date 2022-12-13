@@ -1,14 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>MENJACNICA</title>
+   <meta charset="UTF-8">
+    <title>PREGLED KORISNIKA</title>
+
+     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+
+    <link href="../static/content/jumbotron.css" rel="stylesheet">
+    <link href="../static/content/register.css" rel="stylesheet">
+    <script src="../static/scripts/jquery-1.11.2.js"></script>
+    <script src="../static/scripts/register.js"></script>
 </head>
 <body>
+<div class = "jumbotron">
+    <p>
+         Ime :     {{korisnik["ime"]}} </br>
+         Prezime : {{korisnik["prezime"]}} </br>
+         Adresa :  {{korisnik["adresa"]}} </br>
+         Grad :    {{korisnik["grad"]}} </br>
+         Drzava :  {{korisnik["drzava"]}} </br>
+         Telefon : {{korisnik["brojTelefona"]}} </br>
+         Email :   {{korisnik["email"]}} </br>
+
+         Stanje u banci:   {{korisnik["stanjeUBanci"]}} </br>
+         Stanje na racunu: {{korisnik["stanjeNaRacunu"]}} </br>
+
+
+    </p>
+
+    </br> </br>
+
     <p>
         {{errormsg}}
     </p>
-  <a href = "/PrikaziIzmenuProfila"> Izmeni profil </a>
 
+     </br> </br>
+
+    <a href = "/PrikaziIzmenuProfila"> Izmeni profil </a> </br> </br>
+    <a href="/PrikaziDepozit" > Uplati novac iz banke </a> </br></br>
+    <a href="/Logout" > Logout </a> </br></br>
+</div>
 </body>
 </html>
