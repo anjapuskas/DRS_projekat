@@ -22,13 +22,27 @@ def initTransaction():
     return retVal
 
 @transaction_blueprint.route('/transakcija', methods = ['GET'])
-def getTransakcija():
+def getTransakcije():
     content = flask.request.json
     primalac = content['primalac']
     print(primalac)
 
     cursor = mysql.connection.cursor()
     cursor.execute("SELECT * FROM transakcije WHERE primalac = %s", (primalac,))
+    transakcija = cursor.fetchall()
+    cursor.close()
+
+    return jsonify(transakcija)
+
+@transaction_blueprint.route('/transakcijaPosiljalac', methods = ['GET'])
+def getTransakcijeByPosiljalac():
+    content = flask.request.json
+    primalac = content['primalac']
+    posiljalac = content['posiljalac']
+    print(primalac)
+
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT * FROM transakcije WHERE primalac = %s AND posiljalac = %s", (primalac, posiljalac))
     transakcija = cursor.fetchall()
     cursor.close()
 
@@ -60,7 +74,7 @@ def izmenaStanjeObradjen():
     return povratnaVrednost
 
 
-@transaction_blueprint.route('/izmenaStanjeObradjen', methods=['POST'])
+@transaction_blueprint.route('/izmenaStanjeOdbijen', methods=['POST'])
 def IzmjenaStanjeOdbijen():
     content = flask.request.json
     id = content['id']
