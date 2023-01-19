@@ -226,7 +226,6 @@ def onlineRacun():
 
         #USPJESNO  treba nam upit da se upisu pare u bazu
 
-        uplataNaOnline(email, kolicina)
         isplataSaRacunaPosiljaoca(email1, kolicina)
 
         korisnik2 = getKorisnik(email1)
@@ -276,7 +275,7 @@ def BankovniRacun():
 
 
         #USPJESNO  treba nam upit da se upisu pare u bazu
-        uplataNaBankovniRacun(emailPrimaoca, kolicina)
+
         isplataSaBankovnogRacunaPosiljaoca(email1, kolicina)
         korisnik2 = getKorisnik(email1)
 
@@ -301,29 +300,64 @@ def pregledTransakcija():
 
 @app.route("/PrihvatiTransakciju", methods=['GET', 'POST'])
 def prihvatiTransakciju():
+    req_data = request.form.to_dict(flat=False)
 
-    email = session["email"]
-    korisnik = getKorisnik(email)
+    id = req_data["id"]
 
-    transakcije = getTransakciju(email)
-    idd = transakcije["id"]
-    id1 = '000000000' + str(idd)
-    print(id1)
+    transakcija = getTransakcijaById(id)
+
+    emailPrimalac = transakcija["primalac"]
+    kolicina = transakcija["kolicina"]
+    korisnik = getKorisnik(emailPrimalac)
 
 
-    IzmjenaStanjeObradjen(id1)
+
+    if transakcija["stanje"] == "OBRADJEN":
+        poruka = "Transakcija je vec obradjena."
+        transakcije = getTransakciju(emailPrimalac)
+        return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
+
+    if transakcija["stanje"] == "ODBIJEN":
+        poruka = "Transakcija je vec odbijena."
+        transakcije = getTransakciju(emailPrimalac)
+        return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
+
+
+    uplataNaBankovniRacun(emailPrimalac, kolicina)
+
+    IzmenaStanjeObradjen(id)
+    transakcije = getTransakciju(emailPrimalac)
     return render_template("PregledTransakcija.html", transakcije=transakcije, korisnik = korisnik)
 
 @app.route("/OdbijTransakciju", methods=['GET', 'POST'])
 def odbijTransakciju():
 
-    email = session["email"]
-    transakcije = getTransakciju(email)
-    korisnik = getKorisnik(email)
-    id = transakcije["id"]
-    id1 = '00000000' + str(id)
-    print(id1)
-    IzmjenaStanjeOdbijen(id1)
+    req_data = request.form.to_dict(flat=False)
+
+    id = req_data["id"]
+
+    transakcija = getTransakcijaById(id)
+
+    emailPrimalac = transakcija["primalac"]
+    emailPosiljalac = transakcija["posiljalac"]
+    kolicina = transakcija["kolicina"]
+    korisnik = getKorisnik(emailPrimalac)
+
+    if transakcija["stanje"] == "OBRADJEN":
+        poruka = "Transakcija je vec obradjena."
+        transakcije = getTransakciju(emailPrimalac)
+        return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
+
+    if transakcija["stanje"] == "ODBIJEN":
+        poruka = "Transakcija je vec odbijena."
+        transakcije = getTransakciju(emailPrimalac)
+        return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
+
+
+    uplataNaBankovniRacun(emailPosiljalac, kolicina)
+
+    IzmenaStanjeOdbijen(id)
+    transakcije = getTransakciju(emailPrimalac)
     return render_template("PregledTransakcija.html", transakcije=transakcije, korisnik = korisnik)
 
 
@@ -353,6 +387,11 @@ def getTransakciju(primalac: str) -> list:
     req = requests.get("http://127.0.0.1:8000/api/transakcija", data = body, headers = headers)
     return req.json()
 
+def getTransakcijaById(id: str) -> list:
+    headers = {'Content-type' : 'application/json', 'Accept': 'text/plain'}
+    body = json.dumps({'id': id})
+    req = requests.get("http://127.0.0.1:8000/api/transakcijaId", data = body, headers = headers)
+    return req.json()
 
 
 ############
@@ -435,18 +474,18 @@ def isplataSaBankovnogRacunaPosiljaoca(email, kolicina):
     return req
 
 
-def  IzmjenaStanjeObradjen(id):
+def  IzmenaStanjeObradjen(id):
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     body = json.dumps(
         {'id': id})
-    req = requests.post("http://127.0.0.1:8000/api/IzmjenaStanjeObradjen", data=body, headers=headers)
+    req = requests.post("http://127.0.0.1:8000/api/izmenaStanjeObradjen", data=body, headers=headers)
     return req
 
-def  IzmjenaStanjeOdbijen(id):
+def  IzmenaStanjeOdbijen(id):
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     body = json.dumps(
         {'id': id})
-    req = requests.post("http://127.0.0.1:8000/api/IzmjenaStanjeOdbijen", data=body, headers=headers)
+    req = requests.post("http://127.0.0.1:8000/api/izmenaStanjeOdbijen", data=body, headers=headers)
     return req
 
 
