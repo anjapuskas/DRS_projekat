@@ -34,6 +34,17 @@ def getTransakcija():
 
     return jsonify(transakcija)
 
+@transaction_blueprint.route('/transakcijaId', methods = ['GET'])
+def getTransakcijaById():
+    content = flask.request.json
+    id = content['id']
+
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT * FROM transakcije WHERE id = %s", (id,))
+    transakcija = cursor.fetchone()
+    cursor.close()
+
+    return jsonify(transakcija)
 
 @transaction_blueprint.route('/izmenaStanjeObradjen', methods=['POST'])
 def izmenaStanjeObradjen():
