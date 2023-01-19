@@ -48,7 +48,7 @@ def prikaziIzmenuProfila():
 def prikaziPregledTransakcija():
     email = session["email"]
     korisnik = getKorisnik(email)
-    transakcije = getTransakciju(email)
+    transakcije = getTransakcije(email)
     return render_template('PregledTransakcija.html',transakcije = transakcije, korisnik = korisnik)
 
 
@@ -291,7 +291,34 @@ def BankovniRacun():
 def pregledTransakcija():
 
     primalac = session["email"]
-    transakcije = getTransakciju(primalac)
+    transakcije = getTransakcije(primalac)
+
+    return render_template("PregledTransakcija.html", transakcije=transakcije)
+
+@app.route("/FilterTransakcije", methods=['GET', 'POST'])
+def FilterTransakcije():
+
+    emailPrimalac = session["email"]
+    emailPosiljalac = request.form['inputEmail']
+    transakcije = getTransakcijeByPosiljalac(emailPrimalac, emailPosiljalac)
+
+    return render_template("PregledTransakcija.html", transakcije=transakcije)
+
+@app.route("/SortirajTransakcije", methods=['GET', 'POST'])
+def SortirajTransakcije():
+
+    emailPrimalac = session["email"]
+    sortType = str(request.form['sortType']).split("_")
+    transakcije = getTransakcije(emailPrimalac)
+
+    reverse = sortType[1] == "desc"
+
+    if(sortType[0] == 'posiljalac'):
+        transakcije.sort(key=lambda x: x["posiljalac"], reverse=reverse)
+    if (sortType[0] == 'kolicina'):
+        transakcije.sort(key=lambda x: x["kolicina"], reverse=reverse)
+    if (sortType[0] == 'stanje'):
+        transakcije.sort(key=lambda x: x["stanje"], reverse=reverse)
 
     return render_template("PregledTransakcija.html", transakcije=transakcije)
 
@@ -314,19 +341,19 @@ def prihvatiTransakciju():
 
     if transakcija["stanje"] == "OBRADJEN":
         poruka = "Transakcija je vec obradjena."
-        transakcije = getTransakciju(emailPrimalac)
+        transakcije = getTransakcije(emailPrimalac)
         return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
 
     if transakcija["stanje"] == "ODBIJEN":
         poruka = "Transakcija je vec odbijena."
-        transakcije = getTransakciju(emailPrimalac)
+        transakcije = getTransakcije(emailPrimalac)
         return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
 
 
     uplataNaBankovniRacun(emailPrimalac, kolicina)
 
     IzmenaStanjeObradjen(id)
-    transakcije = getTransakciju(emailPrimalac)
+    transakcije = getTransakcije(emailPrimalac)
     return render_template("PregledTransakcija.html", transakcije=transakcije, korisnik = korisnik)
 
 @app.route("/OdbijTransakciju", methods=['GET', 'POST'])
@@ -345,19 +372,19 @@ def odbijTransakciju():
 
     if transakcija["stanje"] == "OBRADJEN":
         poruka = "Transakcija je vec obradjena."
-        transakcije = getTransakciju(emailPrimalac)
+        transakcije = getTransakcije(emailPrimalac)
         return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
 
     if transakcija["stanje"] == "ODBIJEN":
         poruka = "Transakcija je vec odbijena."
-        transakcije = getTransakciju(emailPrimalac)
+        transakcije = getTransakcije(emailPrimalac)
         return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
 
 
     uplataNaBankovniRacun(emailPosiljalac, kolicina)
 
     IzmenaStanjeOdbijen(id)
-    transakcije = getTransakciju(emailPrimalac)
+    transakcije = getTransakcije(emailPrimalac)
     return render_template("PregledTransakcija.html", transakcije=transakcije, korisnik = korisnik)
 
 
@@ -381,10 +408,16 @@ def getKartica(brojKartice: str) -> dict:
     req = requests.get("http://127.0.0.1:8000/api/kartica", data = body, headers = headers)
     return req.json()
 
-def getTransakciju(primalac: str) -> list:
+def getTransakcije(primalac: str) -> list:
     headers = {'Content-type' : 'application/json', 'Accept': 'text/plain'}
     body = json.dumps({'primalac': primalac})
     req = requests.get("http://127.0.0.1:8000/api/transakcija", data = body, headers = headers)
+    return req.json()
+
+def getTransakcijeByPosiljalac(primalac, posiljalac: str) -> list:
+    headers = {'Content-type' : 'application/json', 'Accept': 'text/plain'}
+    body = json.dumps({'primalac': primalac, 'posiljalac': posiljalac})
+    req = requests.get("http://127.0.0.1:8000/api/transakcijaPosiljalac", data = body, headers = headers)
     return req.json()
 
 def getTransakcijaById(id: str) -> list:

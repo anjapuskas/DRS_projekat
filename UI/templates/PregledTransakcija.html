@@ -43,6 +43,8 @@
 
     <h2> Pregled svih transakcija:  {{transakcije["primalac"]}} </h2>
 
+        <p style="color:red"> {{errormsg}} </p>
+
         <table>
             <tr>
                 <th> Posiljalac </th>
@@ -66,13 +68,37 @@
                     </form>
                 </td>
 
-            </tr>>
+                </tr>
             {% endfor %}
 
 
 
         </table>
 
+        <form class = "form-signin" action="/FilterTransakcije" method="post">
+            <label for="inputEmail" class = "sr-only"> Email </label>
+            <input type = "email" name="inputEmail" id="inputEmail" class="form-control" placeholder="Filter Email Posiljaoca" required autofocus> </br>
+
+            <input type="submit" value="Filter">
+        </form>
+        <form class = "form-signin" action="/PrikaziPregledTransakcija" method="post">
+            <input type="submit" value="Reset">
+        </form>
+
+
+
+        <form class = "form-signin" action="/SortirajTransakcije" method="post">
+            <select id="sortType" name="sortType">
+                        <option value="posiljalac_asc">Posiljalac ASC</option>
+                        <option value="posiljalac_desc">Posiljalac DESC</option>
+                        <option value="kolicina_asc">Kolicina ASC</option>
+                        <option value="kolicina_desc">Kolicina DESC</option>
+                        <option value="stanje_asc">Stanje ASC</option>
+                        <option value="stanje_desc">Stanje DESC</option>
+            </select>
+
+            <input type="submit" value="Sort">
+        </form>
 
     <a href="/PrikaziIndex">Povratak na pocetnu stranicu.</a>
 </div>
