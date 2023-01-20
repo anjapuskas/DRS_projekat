@@ -387,7 +387,21 @@ def odbijTransakciju():
     transakcije = getTransakcije(emailPrimalac)
     return render_template("PregledTransakcija.html", transakcije=transakcije, korisnik = korisnik)
 
+@app.route("/PrikaziPregledValuta", methods=['GET', 'POST'])
+def PrikaziPregledValuta():
+    req = requests.get(
+        "https://freecurrencyapi.net/api/v2/latest?apikey=57fbaed0-7177-11ec-a390-0d2dac4cb175&base_currency=RSD")
+    content = (req.json())['data']
+    valute = []
+    # Converts every other currency in base currecy value
+    for key, value in content.items():
+        if(value != 0):
+            valuta = {}
+            valuta["valuta"] = key
+            valuta["vrednost"] = 1 / value
+            valute.append(valuta)
 
+    return render_template("PregledValuta.html", valute=valute)
 
 
 ########################################################################################################################

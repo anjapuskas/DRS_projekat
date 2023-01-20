@@ -6,6 +6,8 @@ user_blueprint = Blueprint('user_blueprint', __name__)
 
 from Engine.main import mysql
 
+
+
 @user_blueprint.route('/korisnik', methods=['GET'])
 def getKorisik():
     content = flask.request.json
