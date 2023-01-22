@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-    <title>Bankovni racun</title>
+    <title>Menjacnica</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 
@@ -14,28 +14,25 @@
 </head>
 <body>
     <div class = "jumbotron">
-    <h2> Uplata na bankovni racun </h2>
+    <h2> Kupovanje deviza </h2>
     <p style="color:red"> {{errormsg}} </p>
-    <form class = "form-signin" action="/BankovniRacun" method="post">
-
-        <label for="inputBrojKartice" class = "sr-only"> Broj kartice </label>
-        <input type = "number" name="inputBrojKartice" id="inputBrojKartice" class="form-control" placeholder="Broj kartice" required autofocus> </br>
+    <form class = "form-signin" action="/ZameniNovac" method="post">
 
         <label for="inputKolicina" class = "sr-only"> Kolicina novca </label>
-        <input type = "number" name="inputKolicina" id="inputKolicina" class="form-control" placeholder="Kolicina" required autofocus></br>
+        <input type = "number" name="inputKolicina" id="inputKolicina" onchange="zameni()" class="form-control" placeholder="Kolicina" required autofocus></br>
 
         <div class="form-group">
           <label>Valuta</label>
-          <select name="inputValuta"  id="sub_category_id" class="form-control">
+          <select name="inputValuta" id="sub_category_id" class="form-control">
              <option value="" selected="selected"></option>
               {% for v in valute %}
               <option value="{{v.valuta}}">{{v.valuta}}</option>
+
               {% endfor %}
           </select>
         </div>
 
-
-        <input type="submit" value="Uplati">
+        <input type="submit" value="Zameni">
 
     </form>
     <a href="/PrikaziIndex">Povratak na pocetnu stranicu.</a>

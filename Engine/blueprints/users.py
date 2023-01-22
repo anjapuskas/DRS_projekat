@@ -1,5 +1,5 @@
 
-from flask import Blueprint
+from flask import Blueprint, jsonify
 import flask
 
 user_blueprint = Blueprint('user_blueprint', __name__)
@@ -20,6 +20,12 @@ def getKartica():
     brojKartice = content['brojKartice']
     print(brojKartice)
     return getKartica(brojKartice)
+
+@user_blueprint.route('/racuni', methods=['GET'])
+def getRacuni():
+    content = flask.request.json
+    email = content['email']
+    return getRacuni(email)
 
 @user_blueprint.route('/email', methods=['GET'])
 def getEmail():
@@ -46,11 +52,10 @@ def registracija():
     lozinka = flask.request.json['lozinka']
     verifikovan = flask.request.json['verifikovan']
     stanjeNaRacunu = flask.request.json['stanjeNaRacunu']
-    stanjeUBanci = flask.request.json['stanjeUBanci']
 
 
     cursor = mysql.connection.cursor()
-    cursor.execute(''' INSERT INTO korisnik (ime, prezime, adresa, grad, drzava, brojTelefona, email, lozinka, verifikovan, stanjeNaRacunu, stanjeUBanci) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',(ime, prezime, adresa, grad, drzava, brojTelefona, email, lozinka, verifikovan, stanjeNaRacunu, stanjeUBanci))
+    cursor.execute(''' INSERT INTO korisnik (ime, prezime, adresa, grad, drzava, brojTelefona, email, lozinka, verifikovan, stanjeNaRacunu) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',(ime, prezime, adresa, grad, drzava, brojTelefona, email, lozinka, verifikovan, stanjeNaRacunu))
     mysql.connection.commit()
     cursor.close()
 
@@ -106,21 +111,6 @@ def povezivanjeKarticeKorisnik():
     povratnaVrednost = {'message': 'Korisnikova kartica je uspesno povezana'}, 200
     return povratnaVrednost
 
-@user_blueprint.route('/izmeniStanja', methods=['POST'])
-def izmeniStanja():
-    stanjeNaRacunu = flask.request.json['stanjeNaRacunu']
-    stanjeUBanci = flask.request.json['stanjeUBanci']
-    email = flask.request.json['email']
-    print(stanjeNaRacunu)
-    print(stanjeUBanci)
-
-    cursor = mysql.connection.cursor()
-    cursor.execute(''' UPDATE korisnik SET stanjeNaRacunu = %s, stanjeUBanci = %s WHERE email = %s ''', (stanjeNaRacunu,stanjeUBanci,email,))
-    mysql.connection.commit()
-    cursor.close()
-
-    povratnaVrednost = {'message': 'Korisnikovo stanje je uspesno izmenjeno'}, 200
-    return povratnaVrednost
 
 @user_blueprint.route('/uplataOnline', methods=['POST'])
 def uplataOnline():
@@ -150,13 +140,27 @@ def isplataSaRacuna():
 
 @user_blueprint.route('/uplataBankovniRacun', methods=['POST'])
 def uplataBankovniRacun():
+
     kolicina = flask.request.json['kolicina']
+    valuta = flask.request.json['valuta']
     email = flask.request.json['email']
 
     cursor = mysql.connection.cursor()
-    cursor.execute("UPDATE korisnik SET stanjeUBanci = stanjeUBanci + %s  WHERE email = %s", (kolicina, email,))
-    mysql.connection.commit()
+    cursor.execute("SELECT * FROM racun WHERE korisnik = %s AND valuta = %s", (email, valuta))
+    racun = cursor.fetchone()
     cursor.close()
+
+    if racun:
+        cursor = mysql.connection.cursor()
+        cursor.execute("UPDATE racun SET iznos = iznos + %s  WHERE korisnik = %s AND valuta = %s", (kolicina, email, valuta))
+        mysql.connection.commit()
+        cursor.close()
+    else:
+        cursor = mysql.connection.cursor()
+        cursor.execute(''' INSERT INTO racun (korisnik, valuta, iznos) VALUES ( %s, %s, %s)''',
+                       (email, valuta, kolicina,))
+        mysql.connection.commit()
+        cursor.close()
 
     povratnaVrednost = {'message': 'Uplata na bankovni racun je uspesno prosla'}, 200
     return povratnaVrednost
@@ -164,17 +168,44 @@ def uplataBankovniRacun():
 @user_blueprint.route('/isplataBankovniRacun', methods=['POST'])
 def isplataBankovniRacun():
     kolicina = flask.request.json['kolicina']
+    valuta = flask.request.json['valuta']
     email = flask.request.json['email']
 
     cursor = mysql.connection.cursor()
-    cursor.execute("UPDATE korisnik SET stanjeUBanci = stanjeUBanci - %s  WHERE email = %s", (kolicina, email,))
+    cursor.execute("UPDATE racun SET iznos = iznos - %s  WHERE korisnik = %s and valuta = %s", (kolicina, email, valuta))
     mysql.connection.commit()
     cursor.close()
 
     povratnaVrednost = {'message': 'Isplata sa bankovnog racuna je uspesno prosla'}, 200
     return povratnaVrednost
 
+@user_blueprint.route('/uplataNaSopstvenRacun', methods=['POST'])
+def uplataNaSopstvenRacun():
+    kolicina = flask.request.json['kolicina']
+    valuta = flask.request.json['valuta']
+    email = flask.request.json['email']
 
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT * FROM racun WHERE korisnik = %s AND valuta = %s", (email, valuta))
+    racun = cursor.fetchone()
+    cursor.close()
+
+    if racun:
+
+        noviIznos = racun["iznos"] + kolicina
+        cursor = mysql.connection.cursor()
+        cursor.execute("UPDATE racun SET iznos = %s  WHERE korisnik = %s AND valuta = %s", (noviIznos, email, valuta))
+        mysql.connection.commit()
+        cursor.close()
+    else:
+        cursor = mysql.connection.cursor()
+        cursor.execute(''' INSERT INTO racun (korisnik, valuta, iznos) VALUES ( %s, %s, %s)''',
+                       (email, valuta, kolicina,))
+        mysql.connection.commit()
+        cursor.close()
+
+    povratnaVrednost = {'message': 'Uplata na bankovni racun je uspesno prosla'}, 200
+    return povratnaVrednost
 
 def getKorisnik(email: str) -> dict:
     cursor = mysql.connection.cursor()
@@ -182,6 +213,16 @@ def getKorisnik(email: str) -> dict:
     korisnik = cursor.fetchone()
     cursor.close()
     return korisnik
+
+def getRacuni(email: str) -> dict:
+
+
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT * FROM racun WHERE korisnik = %s", (email,))
+    racuni = cursor.fetchall()
+    cursor.close()
+
+    return jsonify(racuni)
 
 def getKartica(brojKartice: str) -> dict:
     cursor = mysql.connection.cursor()

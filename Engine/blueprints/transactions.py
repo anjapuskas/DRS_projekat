@@ -12,9 +12,10 @@ def initTransaction():
     posiljalac = flask.request.json['posiljalac']
     primalac = flask.request.json['primalac']
     kolicina = flask.request.json['kolicina']
+    valuta = flask.request.json['valuta']
 
     cursor = mysql.connection.cursor()
-    cursor.execute(''' INSERT INTO transakcije (posiljalac, primalac, kolicina) VALUES(%s, %s, %s)''', (posiljalac, primalac, kolicina))
+    cursor.execute(''' INSERT INTO transakcije (posiljalac, primalac, kolicina, valuta) VALUES(%s, %s, %s, %s)''', (posiljalac, primalac, kolicina, valuta))
     mysql.connection.commit()
     cursor.close()
 

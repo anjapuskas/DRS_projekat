@@ -50,6 +50,7 @@
                 <th> Posiljalac </th>
                 <th> Kolicina </th>
                 <th> Stanje </th>
+                <th> Valuta </th>
                 <th> Opcija </th>
             </tr>
 
@@ -59,6 +60,7 @@
                 <td> {{t["posiljalac"]}} </td>
                 <td> {{t["kolicina"]}} </td>
                 <td> {{t["stanje"]}}</td>
+                <td> {{t["valuta"]}}</td>
                 <td>
                     <form action="/PrihvatiTransakciju" method="post"><input type="submit" value=" Prihvati" >
                         <input type="hidden" name="id" value="{{ t.id }}" />
@@ -81,11 +83,6 @@
 
             <input type="submit" value="Filter">
         </form>
-        <form class = "form-signin" action="/PrikaziPregledTransakcija" method="post">
-            <input type="submit" value="Reset">
-        </form>
-
-
 
         <form class = "form-signin" action="/SortirajTransakcije" method="post">
             <select id="sortType" name="sortType">
