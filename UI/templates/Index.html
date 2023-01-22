@@ -1,6 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+        <style>
+
+        table {
+            border-collapse: collapse;
+            border-width: 2px;
+            border-color: black;
+            border-style: solid;
+        }
+
+        th {
+            background-color: cadetblue;
+            border-width: 2px;
+            border-color: black;
+            border-style: solid;
+            text-align:center;
+        }
+
+        td {
+            border-width: 2px;
+            border-color: black;
+            border-style: solid
+        }
+    </style>
+
    <meta charset="UTF-8">
     <title>PREGLED KORISNIKA</title>
 
@@ -24,13 +49,33 @@
          Telefon : {{korisnik["brojTelefona"]}} </br>
          Email :   {{korisnik["email"]}} </br>
 
-         Stanje u banci:   {{korisnik["stanjeUBanci"]}} </br>
          Stanje na racunu: {{korisnik["stanjeNaRacunu"]}} </br>
 
 
     </p>
 
     </br> </br>
+
+    Stanje u banci: </br>
+
+    <table>
+    <tr>
+        <th> Valuta </th>
+        <th> Iznos </th>
+    </tr>
+
+      {% for r in racuni %}
+    <tr>
+
+        <td> {{r["valuta"]}} </td>
+        <td> {{r["iznos"]}} </td>
+
+        </tr>
+    {% endfor %}
+
+
+
+        </table>
 
     <p>
         {{errormsg}}
@@ -40,11 +85,14 @@
 
     <a href = "/PrikaziIzmenuProfila"> Izmeni profil </a> </br> </br>
     <a href="/PrikaziDepozit" > Uplati novac iz banke </a> </br></br>
+    <a href="/PrikaziMenjacnicu" > Zameni novac </a> </br></br>
 
     <p>
         Iniciranje transkacije drugom korisniku:</br>
-        <a href="/PrikaziBankovniRacun">Uplata na bankovni racun </a></br>
+
         <a href="/PrikaziOnlineRacun">Uplata na online racun </a></br>
+        <a href="/PrikaziBankovniRacun">Uplata na bankovni racun </a></br>
+
 
         <a href="/PrikaziPregledTransakcija">Pregled transkacija</a></br>
         <a href="/PrikaziPregledValuta">Pregled valuta</a></br>

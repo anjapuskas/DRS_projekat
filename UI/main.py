@@ -33,7 +33,13 @@ def prikaziOnlineRacun():
 @app.route("/PrikaziBankovniRacun", methods=['POST', 'GET'])
 def prikaziBankovniRacun():
     session["mogucaUplata"] = 1
-    return render_template('BankovniRacun.html')
+    valute = getValuteList()
+    return render_template('BankovniRacun.html', valute = valute)
+
+@app.route("/PrikaziMenjacnicu", methods=['POST', 'GET'])
+def prikaziMenjacnicu():
+    valute = getValuteList()
+    return render_template('Menjacnica.html', valute = valute)
 
 
 @app.route("/PrikaziIzmenuProfila", methods=['POST', 'GET'])
@@ -56,7 +62,8 @@ def prikaziPregledTransakcija():
 def prikaziIndex():
     email = session["email"]
     korisnik = getKorisnik(email)
-    return render_template('Index.html', korisnik = korisnik)
+    racuni = getRacuni(email)
+    return render_template('Index.html', korisnik = korisnik, racuni = racuni)
 #################################################################################################################
 
 
@@ -73,14 +80,14 @@ def registracija():
     lozinka = request.form['inputLozinka']
     verifikovan = 0
     stanjeNaRacunu = 2
-    stanjeUBanci = 100000
 
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     body = json.dumps(
         {'ime': ime, 'prezime': prezime, 'adresa': adresa, 'grad': grad, 'drzava': drzava,
-         'brojTelefona': brojTelefona, 'email': email, 'lozinka': lozinka, 'verifikovan': verifikovan, 'stanjeNaRacunu': stanjeNaRacunu,
-         'stanjeUBanci': stanjeUBanci})
+         'brojTelefona': brojTelefona, 'email': email, 'lozinka': lozinka, 'verifikovan': verifikovan, 'stanjeNaRacunu': stanjeNaRacunu})
     req = requests.post("http://127.0.0.1:8000/api/registracija", data=body, headers=headers)
+
+    uplataNaSopstvenRacun(email, 100000, 'RSD')
 
     response = (req.json())
     _message = response['message']
@@ -115,6 +122,7 @@ def login():
     lozinka = request.form['inputLozinka']
 
     korisnik = getKorisnik(email)
+    racuni = getRacuni(email)
 
     if korisnik != None and korisnik["email"] == email and korisnik["lozinka"] == lozinka:
         #poruka = "Uspjesno logovanje!"
@@ -122,7 +130,7 @@ def login():
         if korisnik["verifikovan"] == 0:
             return render_template("Verifikacija.html")
         else:
-            return render_template("Index.html",korisnik = korisnik)
+            return render_template("Index.html",korisnik = korisnik, racuni = racuni)
     else:
         poruka = "Nespravan email ili lozinka!"
     return render_template("Login.html", errormsg=poruka)
@@ -174,18 +182,25 @@ def uplataNaRacun():
             poruka = "Pogresan kod"
             return render_template("/Depozit.html", errormsg=poruka)
 
+        racuni = getRacuni(email);
+        stanjeUBanci = 0
 
+
+        for racun in racuni:
+            if 'RSD' == racun["valuta"]:
+                stanjeUBanci = racun["iznos"]
+                break
 
         stanjeNaRacunu = korisnik["stanjeNaRacunu"]
-        stanjeUBanci = korisnik["stanjeUBanci"]
 
 
         if stanjeUBanci >= int(suma):
             stanjeNaRacunu += int(suma)
             stanjeUBanci -= int(suma)
 
-            IzmeniStanja(email, stanjeNaRacunu, stanjeUBanci)
-           # updateKorisnika(email, korisnik["ime"], korisnik["prezime"], korisnik["adresa"], korisnik["grad"], korisnik["drzava"], korisnik["brojTelefona"], korisnik["lozinka"], stanjeNaRacunu, stanjeUBanci)
+            uplataNaOnline(email, suma)
+            isplataSaBankovnogRacunaPosiljaoca(email, suma, 'RSD')
+
             korisnik1 = getKorisnik(email)
             session["mogucaUplata"] = 0
             return  render_template("/Index.html", korisnik = korisnik1)
@@ -230,7 +245,7 @@ def onlineRacun():
 
         korisnik2 = getKorisnik(email1)
 
-        upisTransakcije(email1, email, kolicina)
+        upisTransakcije(email1, email, kolicina, 'RSD')
 
         session["mogucaUplata"] = 0
         return render_template("Index.html", korisnik=korisnik2)
@@ -242,6 +257,7 @@ def onlineRacun():
 def BankovniRacun():
     brojKartice = request.form['inputBrojKartice']
     kolicina = request.form['inputKolicina']
+    valuta = request.form['inputValuta']
 
     # PRIMALAC
     kartica = getKartica(brojKartice) #onaj kome salje
@@ -254,6 +270,16 @@ def BankovniRacun():
     email1 = session["email"]
     korisnik1 = getKorisnik(email1)
     karitca1 = korisnik1["brojKartice"]  #onaj ko salje
+    racuni = getRacuni(email1);
+    stanjeUBanci = 0
+
+    postoji = 0;
+
+    for racun in racuni:
+        if valuta == racun["valuta"]:
+            postoji = 1
+            stanjeUBanci = racun["iznos"]
+            break
 
     if session["mogucaUplata"] == 1:
 
@@ -261,7 +287,11 @@ def BankovniRacun():
             poruka = "Morate uplatiti sumu vecu od 0."
             return render_template("BankovniRacun.html", errormsg=poruka)
 
-        if korisnik1["stanjeUBanci"] < 0:
+        if postoji == 0:
+            poruka = "Ne posedujete novac u izabranoj valuti."
+            return render_template("BankovniRacun.html", errormsg=poruka)
+
+        if stanjeUBanci < 0:
             poruka = "Nemate dovoljno novca u banci."
             return render_template("BankovniRacun.html", errormsg=poruka)
 
@@ -276,15 +306,47 @@ def BankovniRacun():
 
         #USPJESNO  treba nam upit da se upisu pare u bazu
 
-        isplataSaBankovnogRacunaPosiljaoca(email1, kolicina)
+        isplataSaBankovnogRacunaPosiljaoca(email1, kolicina, valuta)
         korisnik2 = getKorisnik(email1)
 
-        upisTransakcije(email1, emailPrimaoca, kolicina)
+        upisTransakcije(email1, emailPrimaoca, kolicina, valuta)
 
         session["mogucaUplata"] = 0
         return render_template("Index.html", korisnik=korisnik2)
     else:
         return render_template("Index.html", korisnik=korisnik1)
+
+
+@app.route("/ZameniNovac", methods=['GET', 'POST'])
+def zameniNovac():
+    valuta = request.form['inputValuta']
+    kolicina = float(request.form['inputKolicina'])
+    kurs = float(getValutaVrednost(valuta))
+
+    email = session["email"]
+    korisnik = getKorisnik(email)
+    racuni = getRacuni(email);
+    stanjeUBanci = 0
+
+    for racun in racuni:
+        if valuta == racun["valuta"]:
+            postoji = 1
+            stanjeUBanci = racun["iznos"]
+            break
+
+
+    if float(kolicina) <= 0:
+        poruka = "Morate uplatiti sumu vecu od 0."
+        return render_template("BankovniRacun.html", errormsg=poruka)
+
+    if stanjeUBanci < 0:
+        poruka = "Nemate dovoljno novca u banci."
+        return render_template("BankovniRacun.html", errormsg=poruka)
+
+    uplataNaBankovniRacun(email, kolicina, valuta)
+    isplataSaRacunaPosiljaoca(email, kolicina*kurs)
+
+    return render_template("Index.html", korisnik=korisnik)
 
 
 @app.route("/PrikaziPregledTransakcija", methods=['GET', 'POST'])
@@ -335,6 +397,7 @@ def prihvatiTransakciju():
 
     emailPrimalac = transakcija["primalac"]
     kolicina = transakcija["kolicina"]
+    valuta = transakcija["valuta"]
     korisnik = getKorisnik(emailPrimalac)
 
 
@@ -350,7 +413,7 @@ def prihvatiTransakciju():
         return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
 
 
-    uplataNaBankovniRacun(emailPrimalac, kolicina)
+    uplataNaBankovniRacun(emailPrimalac, kolicina, valuta)
 
     IzmenaStanjeObradjen(id)
     transakcije = getTransakcije(emailPrimalac)
@@ -368,6 +431,7 @@ def odbijTransakciju():
     emailPrimalac = transakcija["primalac"]
     emailPosiljalac = transakcija["posiljalac"]
     kolicina = transakcija["kolicina"]
+    valuta = transakcija["valuta"]
     korisnik = getKorisnik(emailPrimalac)
 
     if transakcija["stanje"] == "OBRADJEN":
@@ -381,7 +445,7 @@ def odbijTransakciju():
         return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
 
 
-    uplataNaBankovniRacun(emailPosiljalac, kolicina)
+    uplataNaBankovniRacun(emailPosiljalac, kolicina, valuta)
 
     IzmenaStanjeOdbijen(id)
     transakcije = getTransakcije(emailPrimalac)
@@ -389,17 +453,7 @@ def odbijTransakciju():
 
 @app.route("/PrikaziPregledValuta", methods=['GET', 'POST'])
 def PrikaziPregledValuta():
-    req = requests.get(
-        "https://freecurrencyapi.net/api/v2/latest?apikey=57fbaed0-7177-11ec-a390-0d2dac4cb175&base_currency=RSD")
-    content = (req.json())['data']
-    valute = []
-    # Converts every other currency in base currecy value
-    for key, value in content.items():
-        if(value != 0):
-            valuta = {}
-            valuta["valuta"] = key
-            valuta["vrednost"] = 1 / value
-            valute.append(valuta)
+    valute = getValuteList()
 
     return render_template("PregledValuta.html", valute=valute)
 
@@ -426,6 +480,13 @@ def getTransakcije(primalac: str) -> list:
     headers = {'Content-type' : 'application/json', 'Accept': 'text/plain'}
     body = json.dumps({'primalac': primalac})
     req = requests.get("http://127.0.0.1:8000/api/transakcija", data = body, headers = headers)
+    return req.json()
+
+def getRacuni(email: str) -> dict:
+
+    headers = {'Content-type' : 'application/json', 'Accept': 'text/plain'}
+    body = json.dumps({'email': email})
+    req = requests.get("http://127.0.0.1:8000/api/racuni", data = body, headers = headers)
     return req.json()
 
 def getTransakcijeByPosiljalac(primalac, posiljalac: str) -> list:
@@ -460,19 +521,11 @@ def povezivanjeKarticeiKorisnika(email : str, ime : str, brojKartice : str, datu
     req = requests.post("http://127.0.0.1:8000/api/povezivanjeKarticeKorisnik", data=body, headers=headers)
     return req
 
-def IzmeniStanja(email: str, stanjeNaRacunu : int, stanjeUBanci : int):
+def upisTransakcije( posiljalac, primalac, kolicina, valuta):
 
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     body = json.dumps(
-        {'email': email, 'stanjeNaRacunu': stanjeNaRacunu, 'stanjeUBanci': stanjeUBanci})
-    req = requests.post("http://127.0.0.1:8000/api/izmeniStanja", data=body, headers=headers)
-    return req
-
-def upisTransakcije( posiljalac, primalac, kolicina):
-
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    body = json.dumps(
-        {'posiljalac': posiljalac, 'primalac': primalac, 'kolicina': kolicina})
+        {'posiljalac': posiljalac, 'primalac': primalac, 'kolicina': kolicina, 'valuta': valuta})
     req = requests.post("http://127.0.0.1:8000/api/upisTransakcije", data=body, headers=headers)
     return req
 
@@ -506,17 +559,17 @@ def isplataSaRacunaPosiljaoca(email, kolicina):
     req = requests.post("http://127.0.0.1:8000/api/isplataSaRacuna", data=body, headers=headers)
     return req
 
-def uplataNaBankovniRacun(email, kolicina):
+def uplataNaBankovniRacun(email, kolicina, valuta):
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     body = json.dumps(
-        {'email': email, 'kolicina': kolicina})
+        {'email': email, 'kolicina': kolicina, 'valuta': valuta})
     req = requests.post("http://127.0.0.1:8000/api/uplataBankovniRacun", data=body, headers=headers)
     return req
 
-def isplataSaBankovnogRacunaPosiljaoca(email, kolicina):
+def isplataSaBankovnogRacunaPosiljaoca(email, kolicina, valuta):
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     body = json.dumps(
-        {'email': email, 'kolicina': kolicina})
+        {'email': email, 'kolicina': kolicina, 'valuta': valuta})
     req = requests.post("http://127.0.0.1:8000/api/isplataBankovniRacun", data=body, headers=headers)
     return req
 
@@ -535,9 +588,34 @@ def  IzmenaStanjeOdbijen(id):
     req = requests.post("http://127.0.0.1:8000/api/izmenaStanjeOdbijen", data=body, headers=headers)
     return req
 
+def uplataNaSopstvenRacun(email, kolicina, valuta):
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    body = json.dumps(
+        {'email': email, 'kolicina': kolicina, 'valuta': valuta})
+    req = requests.post("http://127.0.0.1:8000/api/uplataNaSopstvenRacun", data=body, headers=headers)
+    return req
 
+def getValuteList():
+    req = requests.get(
+        "https://freecurrencyapi.net/api/v2/latest?apikey=57fbaed0-7177-11ec-a390-0d2dac4cb175&base_currency=RSD")
+    content = (req.json())['data']
+    valute = []
+    # Converts every other currency in base currecy value
+    for key, value in content.items():
+        if(value != 0):
+            valuta = {}
+            valuta["valuta"] = key
+            valuta["vrednost"] = 1 / value
+            valute.append(valuta)
+    return valute
 
+def getValutaVrednost(valuta):
+    valute = getValuteList()
+    for v in valute:
+        if valuta == v["valuta"]:
+            return v["vrednost"]
 
+    return 0
 
 if __name__ == '__main__':
     app.run(debug=True)
