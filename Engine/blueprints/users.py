@@ -228,7 +228,10 @@ def getKorisnik(email: str) -> dict:
     cursor.execute("SELECT * FROM korisnik WHERE email = %s", (email,))
     korisnik = cursor.fetchone()
     cursor.close()
-    return korisnik
+    if korisnik is None:
+        return {}
+    else:
+        return korisnik
 
 def getKorisnikForNit(email: str) -> dict:
     mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
@@ -262,4 +265,7 @@ def getKartica(brojKartice: str) -> dict:
     cursor.execute("SELECT * FROM kartica WHERE brojKartice = %s", (brojKartice,))
     kartica = cursor.fetchone()
     cursor.close()
-    return kartica
+    if kartica is None:
+        return {}
+    else:
+        return kartica

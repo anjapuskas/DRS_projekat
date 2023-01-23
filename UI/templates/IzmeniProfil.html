@@ -27,26 +27,26 @@
     <form class="form-signin" action="/IzmeniProfil" method="post">
 
         <label for="inputIme" class="sr-only">Ime:</label>
-        <input type="text" name="inputIme" id="inputIme" class="form-control" placeholder="Ime" required autofocus></br>
+        <input type="text" name="inputIme" id="inputIme" class="form-control" placeholder="{{korisnik['ime']}}" required autofocus></br>
 
        <label for="inputPrezime" class="sr-only">Prezime:</label>
-        <input type="text" name="inputPrezime" id="inputPrezime" class="form-control" placeholder="Prezime" required autofocus></br>
+        <input type="text" name="inputPrezime" id="inputPrezime" class="form-control" placeholder="{{korisnik['prezime']}}" required autofocus></br>
 
         <label for="inputAdresa" class="sr-only">Adresa:</label>
-        <input type="text" name="inputAdresa" id="inputAdresa" class="form-control" placeholder="Adresa" required autofocus></br>
+        <input type="text" name="inputAdresa" id="inputAdresa" class="form-control" placeholder="{{korisnik['adresa']}}" required autofocus></br>
 
         <label for="inputGrad" class="sr-only">Grad:</label>
-        <input type="text" name="inputGrad" id="inputGrad" class="form-control" placeholder="Grad" required autofocus></br>
+        <input type="text" name="inputGrad" id="inputGrad" class="form-control" placeholder="{{korisnik['grad']}}" required autofocus></br>
 
 
         <label for="inputDrzava" class="sr-only">Drzava:</label>
-        <input type="text" name="inputDrzava" id="inputDrzava" class="form-control" placeholder="Drzava" required autofocus></br>
+        <input type="text" name="inputDrzava" id="inputDrzava" class="form-control" placeholder="{{korisnik['drzava']}}" required autofocus></br>
 
 
 
 
         <label for="inputBrojTelefona" class="sr-only">Broj telefona:</label>
-        <input type="number" name="inputBrojTelefona" id="inputBrojTelefona" class="form-control" placeholder="Broj telefona" required autofocus></br>
+        <input type="number" name="inputBrojTelefona" id="inputBrojTelefona" class="form-control" placeholder="{{korisnik['brojTelefona']}}" required autofocus></br>
 
 
          <label for="inputLozinka" class="sr-only">Lozinka:</label>
@@ -54,6 +54,8 @@
 
 
         <input type="submit" value="Modifikuj"></br>
+
+        <a href="/PrikaziIndex">Povratak na pocetnu stranicu.</a>
     </form>
 </div>
 

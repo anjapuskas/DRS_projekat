@@ -3,6 +3,7 @@ import json
 import requests
 from flask import Flask, request, session, render_template
 from flask_mysqldb import MySQL
+import datetime
 
 app = Flask(__name__)
 
@@ -13,7 +14,7 @@ def start():
     return render_template("Login.html")
 @app.route('/Logout')
 def logout():
-    session.pop("korisnik", None)
+    session["korisnik"] = None
     return render_template("Login.html")
 
 @app.route("/PrikaziRegistraciju", methods=['POST', 'GET'])
@@ -38,6 +39,7 @@ def prikaziBankovniRacun():
 
 @app.route("/PrikaziMenjacnicu", methods=['POST', 'GET'])
 def prikaziMenjacnicu():
+    session["mogucaUplata"] = 1
     valute = getValuteList()
     return render_template('Menjacnica.html', valute = valute)
 
@@ -81,18 +83,23 @@ def registracija():
     verifikovan = 0
     stanjeNaRacunu = 2
 
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    body = json.dumps(
-        {'ime': ime, 'prezime': prezime, 'adresa': adresa, 'grad': grad, 'drzava': drzava,
-         'brojTelefona': brojTelefona, 'email': email, 'lozinka': lozinka, 'verifikovan': verifikovan, 'stanjeNaRacunu': stanjeNaRacunu})
-    req = requests.post("http://127.0.0.1:8000/api/registracija", data=body, headers=headers)
+    if getKorisnik(email) == {}:
 
-    uplataNaSopstvenRacun(email, 100000, 'RSD')
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        body = json.dumps(
+            {'ime': ime, 'prezime': prezime, 'adresa': adresa, 'grad': grad, 'drzava': drzava,
+             'brojTelefona': brojTelefona, 'email': email, 'lozinka': lozinka, 'verifikovan': verifikovan, 'stanjeNaRacunu': stanjeNaRacunu})
+        req = requests.post("http://127.0.0.1:8000/api/registracija", data=body, headers=headers)
 
-    response = (req.json())
-    _message = response['message']
-    _code = req.status_code
-    return render_template("Login.html")
+        uplataNaSopstvenRacun(email, 100000, 'RSD')
+
+        response = (req.json())
+        _message = response['message']
+        _code = req.status_code
+        return render_template("Login.html")
+    else:
+        poruka = "Korisnik sa unesenim emailom vec postoji"
+        return render_template("Registracija.html", errormsg=poruka)
 
 
 @app.route("/IzmeniProfil", methods=['GET', 'POST'])
@@ -125,7 +132,7 @@ def login():
     korisnik = getKorisnik(email)
     racuni = getRacuni(email)
 
-    if korisnik != None and korisnik["email"] == email and korisnik["lozinka"] == lozinka:
+    if korisnik != None and korisnik != {} and korisnik["email"] == email and korisnik["lozinka"] == lozinka:
         #poruka = "Uspjesno logovanje!"
         session["email"] = email
         if korisnik["verifikovan"] == 0:
@@ -144,6 +151,17 @@ def verifikacija():
     mjesec = request.form['inputMjesec']
     godina = request.form['inputGodina']
     kod = request.form['inputKod']
+
+    today = datetime.date.today()
+
+    if int(godina) < today.year | (int(godina) == today.year & int(mjesec) < today.month):
+        poruka = "Godina i mesec kartice moraju biti nakon danasnjeg dana"
+        return render_template("Verifikacija.html", errormsg=poruka)
+
+    if getKartica(brojKartice) != {}:
+        poruka = "Broj kartice vec postoji"
+        return render_template("Verifikacija.html", errormsg=poruka)
+
 
     datumIsteka = mjesec + '/' + godina
 
@@ -181,11 +199,15 @@ def uplataNaRacun():
             poruka = "Uplata na racun mora biti  veca od 0"
             return render_template("/Depozit.html", errormsg=poruka)
 
+        if kartica == {}:
+            poruka = "Kartica ne postoji"
+            return render_template("/Depozit.html", errormsg=poruka)
+
         if kod != kartica["kod"]:
             poruka = "Pogresan kod"
             return render_template("/Depozit.html", errormsg=poruka)
 
-        racuni = getRacuni(email);
+        racuni = getRacuni(email)
         stanjeUBanci = 0
 
 
@@ -229,6 +251,15 @@ def onlineRacun():
         if float(kolicina) <= 0:
             poruka = "Morate uplatiti sumu vecu od 0."
             return render_template("OnlineRacun.html", errormsg=poruka)
+        if email == email1:
+            poruka = "Korisnik ne moze poslati sam sebi novac."
+            return render_template("OnlineRacun.html", errormsg=poruka)
+        if korisnik == {}:
+            poruka = "Ne postoji korisnik kome se uplacuje novac."
+            return render_template("OnlineRacun.html", errormsg=poruka)
+        if korisnik1["stanjeNaRacunu"] < int(kolicina) :
+            poruka = "Nemate dovoljno novca na racunu."
+            return render_template("OnlineRacun.html", errormsg=poruka)
 
 
         #USPJESNO  treba nam upit da se upisu pare u bazu
@@ -252,6 +283,9 @@ def BankovniRacun():
 
     # PRIMALAC
     kartica = getKartica(brojKartice) #onaj kome salje
+    if kartica == {}:
+        poruka = "Kartica ne postoji"
+        return render_template("/BankovniRacun.html", errormsg=poruka)
     email2 = getEmail(brojKartice)
 
     emailPrimaoca = email2["email"]
@@ -261,10 +295,10 @@ def BankovniRacun():
     email1 = session["email"]
     korisnik1 = getKorisnik(email1)
     karitca1 = korisnik1["brojKartice"]  #onaj ko salje
-    racuni = getRacuni(email1);
+    racuni = getRacuni(email1)
     stanjeUBanci = 0
 
-    postoji = 0;
+    postoji = 0
 
     for racun in racuni:
         if valuta == racun["valuta"]:
@@ -274,6 +308,10 @@ def BankovniRacun():
 
     if session["mogucaUplata"] == 1:
 
+
+        if kartica == {}:
+            poruka = "Kartica ne postoji"
+            return render_template("/BankovniRacun.html", errormsg=poruka)
         if float(kolicina) <= 0:
             poruka = "Morate uplatiti sumu vecu od 0."
             return render_template("BankovniRacun.html", errormsg=poruka)
@@ -308,7 +346,7 @@ def zameniNovac():
 
     email = session["email"]
     korisnik = getKorisnik(email)
-    racuni = getRacuni(email);
+    racuni = getRacuni(email)
     stanjeUBanci = 0
 
     for racun in racuni:
@@ -317,20 +355,26 @@ def zameniNovac():
             stanjeUBanci = racun["iznos"]
             break
 
+    if session["mogucaUplata"] == 1:
 
-    if float(kolicina) <= 0:
-        poruka = "Morate uplatiti sumu vecu od 0."
-        return render_template("BankovniRacun.html", errormsg=poruka)
+        if float(kolicina) <= 0:
+            poruka = "Morate uplatiti sumu vecu od 0."
+            return render_template("BankovniRacun.html", errormsg=poruka)
 
-    if stanjeUBanci < 0:
-        poruka = "Nemate dovoljno novca u banci."
-        return render_template("BankovniRacun.html", errormsg=poruka)
+        if korisnik["stanjeNaRacunu"] < kolicina*kurs:
+            poruka = "Nemate dovoljno novca na racunu."
+            return render_template("BankovniRacun.html", errormsg=poruka)
 
-    uplataNaBankovniRacun(email, kolicina, valuta)
-    isplataSaRacunaPosiljaoca(email, kolicina*kurs)
 
-    racuni = getRacuni(email)
-    return render_template("Index.html", korisnik=korisnik, racuni = racuni)
+        uplataNaBankovniRacun(email, kolicina, valuta)
+        isplataSaRacunaPosiljaoca(email, kolicina*kurs)
+
+        racuni = getRacuni(email)
+        korisnik = getKorisnik(email)
+        session["mogucaUplata"] = 0
+        return render_template("Index.html", korisnik=korisnik, racuni = racuni)
+    else:
+        return render_template("Index.html", korisnik=korisnik, racuni=racuni)
 
 
 @app.route("/PrikaziPregledTransakcija", methods=['GET', 'POST'])
@@ -344,23 +388,23 @@ def pregledTransakcija():
 @app.route("/FilterTransakcije", methods=['GET', 'POST'])
 def FilterTransakcije():
 
-    emailPrimalac = session["email"]
-    emailPosiljalac = request.form['inputEmail']
-    transakcije = getTransakcijeByPosiljalac(emailPrimalac, emailPosiljalac)
+    emailPosiljalac = session["email"]
+    emailPrimalac = request.form['inputEmail']
+    transakcije = getTransakcijeByPrimalac(emailPrimalac, emailPosiljalac)
 
     return render_template("PregledTransakcija.html", transakcije=transakcije)
 
 @app.route("/SortirajTransakcije", methods=['GET', 'POST'])
 def SortirajTransakcije():
 
-    emailPrimalac = session["email"]
+    emailPosiljalac = session["email"]
     sortType = str(request.form['sortType']).split("_")
-    transakcije = getTransakcije(emailPrimalac)
+    transakcije = getTransakcije(emailPosiljalac)
 
     reverse = sortType[1] == "desc"
 
-    if(sortType[0] == 'posiljalac'):
-        transakcije.sort(key=lambda x: x["posiljalac"], reverse=reverse)
+    if(sortType[0] == 'primalac'):
+        transakcije.sort(key=lambda x: x["primalac"], reverse=reverse)
     if (sortType[0] == 'kolicina'):
         transakcije.sort(key=lambda x: x["kolicina"], reverse=reverse)
     if (sortType[0] == 'stanje'):
@@ -393,9 +437,9 @@ def getKartica(brojKartice: str) -> dict:
     req = requests.get("http://127.0.0.1:8000/api/kartica", data = body, headers = headers)
     return req.json()
 
-def getTransakcije(primalac: str) -> list:
+def getTransakcije(posiljalac: str) -> list:
     headers = {'Content-type' : 'application/json', 'Accept': 'text/plain'}
-    body = json.dumps({'primalac': primalac})
+    body = json.dumps({'posiljalac': posiljalac})
     req = requests.get("http://127.0.0.1:8000/api/transakcija", data = body, headers = headers)
     return req.json()
 
@@ -406,7 +450,7 @@ def getRacuni(email: str) -> dict:
     req = requests.get("http://127.0.0.1:8000/api/racuni", data = body, headers = headers)
     return req.json()
 
-def getTransakcijeByPosiljalac(primalac, posiljalac: str) -> list:
+def getTransakcijeByPrimalac(primalac, posiljalac: str) -> list:
     headers = {'Content-type' : 'application/json', 'Accept': 'text/plain'}
     body = json.dumps({'primalac': primalac, 'posiljalac': posiljalac})
     req = requests.get("http://127.0.0.1:8000/api/transakcijaPosiljalac", data = body, headers = headers)

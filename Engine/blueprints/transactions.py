@@ -39,18 +39,18 @@ def initTransaction():
 @transaction_blueprint.route('/transakcija', methods = ['GET'])
 def getTransakcije():
     content = flask.request.json
-    primalac = content['primalac']
-    print(primalac)
+    posiljalac = content['posiljalac']
+    print(posiljalac )
 
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT * FROM transakcije WHERE primalac = %s", (primalac,))
+    cursor.execute("SELECT * FROM transakcije WHERE posiljalac = %s", (posiljalac,))
     transakcija = cursor.fetchall()
     cursor.close()
 
     return jsonify(transakcija)
 
 @transaction_blueprint.route('/transakcijaPosiljalac', methods = ['GET'])
-def getTransakcijeByPosiljalac():
+def getTransakcijeByPrimalac():
     content = flask.request.json
     primalac = content['primalac']
     posiljalac = content['posiljalac']
@@ -138,6 +138,8 @@ def procesTransakcija(queue: Queue):
             cursor.close()
 
             if korisnikPrimaoc is None:
+                IzmjenaStanjeOdbijen(transakcijaId["id"])
+            elif racunPosiljalac is None:
                 IzmjenaStanjeOdbijen(transakcijaId["id"])
             elif int(racunPosiljalac[2]) < int(kolicina):
                 IzmjenaStanjeOdbijen(transakcijaId["id"])

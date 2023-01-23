@@ -47,17 +47,16 @@
 
         <table>
             <tr>
-                <th> Posiljalac </th>
+                <th> Primalac </th>
                 <th> Kolicina </th>
                 <th> Stanje </th>
                 <th> Valuta </th>
-                <th> Opcija </th>
             </tr>
 
               {% for t in transakcije %}
             <tr>
 
-                <td> {{t["posiljalac"]}} </td>
+                <td> {{t["primalac"]}} </td>
                 <td> {{t["kolicina"]}} </td>
                 <td> {{t["stanje"]}}</td>
                 <td> {{t["valuta"]}}</td>
@@ -71,15 +70,19 @@
 
         <form class = "form-signin" action="/FilterTransakcije" method="post">
             <label for="inputEmail" class = "sr-only"> Email </label>
-            <input type = "email" name="inputEmail" id="inputEmail" class="form-control" placeholder="Filter Email Posiljaoca" required autofocus> </br>
+            <input type = "email" name="inputEmail" id="inputEmail" class="form-control" placeholder="Filter Email Primaoca" required autofocus> </br>
 
             <input type="submit" value="Filter">
         </form>
 
+        <form class = "form-signin" action="/PrikaziPregledTransakcija" method="post">
+            <input type="submit" value="Reset">
+        </form>
+
         <form class = "form-signin" action="/SortirajTransakcije" method="post">
             <select id="sortType" name="sortType">
-                        <option value="posiljalac_asc">Posiljalac ASC</option>
-                        <option value="posiljalac_desc">Posiljalac DESC</option>
+                        <option value="primalac_asc">Primalac ASC</option>
+                        <option value="primalac_desc">Primalac DESC</option>
                         <option value="kolicina_asc">Kolicina ASC</option>
                         <option value="kolicina_desc">Kolicina DESC</option>
                         <option value="stanje_asc">Stanje ASC</option>
