@@ -1,6 +1,7 @@
 
 from flask import Blueprint, jsonify
 import flask
+import MySQLdb
 
 user_blueprint = Blueprint('user_blueprint', __name__)
 
@@ -125,12 +126,31 @@ def uplataOnline():
     povratnaVrednost = {'message': 'Online uplata je uspesno prosla'}, 200
     return povratnaVrednost
 
+def uplataOnline(kolicina, email):
+
+    mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+    cursor = mydb.cursor()
+    cursor.execute("UPDATE korisnik SET stanjeNaRacunu = stanjeNaRacunu + %s  WHERE email = %s", (kolicina, email,))
+    mysql.connection.commit()
+    cursor.close()
+
+    povratnaVrednost = {'message': 'Online uplata je uspesno prosla'}, 200
+    return povratnaVrednost
+
 @user_blueprint.route('/isplataSaRacuna', methods=['POST'])
-def isplataSaRacuna():
+def isplataSaOnlineRacuna():
     kolicina = flask.request.json['kolicina']
     email = flask.request.json['email']
 
-    cursor = mysql.connection.cursor()
+    isplataSaOnlineRacuna(kolicina, email)
+
+    povratnaVrednost = {'message': 'Online isplata je uspesno prosla'}, 200
+    return povratnaVrednost
+
+def isplataSaOnlineRacuna(kolicina, email):
+
+    mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+    cursor = mydb.cursor()
     cursor.execute("UPDATE korisnik SET stanjeNaRacunu = stanjeNaRacunu - %s  WHERE email = %s", (kolicina, email,))
     mysql.connection.commit()
     cursor.close()
@@ -140,12 +160,19 @@ def isplataSaRacuna():
 
 @user_blueprint.route('/uplataBankovniRacun', methods=['POST'])
 def uplataBankovniRacun():
-
     kolicina = flask.request.json['kolicina']
-    valuta = flask.request.json['valuta']
     email = flask.request.json['email']
+    valuta = flask.request.json['valuta']
 
-    cursor = mysql.connection.cursor()
+    uplataBankovniRacun(email, kolicina, valuta)
+
+    povratnaVrednost = {'message': 'Uplata na bankovni racun je uspesno prosla'}, 200
+    return povratnaVrednost
+
+def uplataBankovniRacun(email, kolicina, valuta):
+
+    mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+    cursor = mydb.cursor()
     cursor.execute("SELECT * FROM racun WHERE korisnik = %s AND valuta = %s", (email, valuta))
     racun = cursor.fetchone()
     cursor.close()
@@ -162,22 +189,24 @@ def uplataBankovniRacun():
         mysql.connection.commit()
         cursor.close()
 
-    povratnaVrednost = {'message': 'Uplata na bankovni racun je uspesno prosla'}, 200
-    return povratnaVrednost
-
 @user_blueprint.route('/isplataBankovniRacun', methods=['POST'])
 def isplataBankovniRacun():
     kolicina = flask.request.json['kolicina']
-    valuta = flask.request.json['valuta']
     email = flask.request.json['email']
+    valuta = flask.request.json['valuta']
 
-    cursor = mysql.connection.cursor()
-    cursor.execute("UPDATE racun SET iznos = iznos - %s  WHERE korisnik = %s and valuta = %s", (kolicina, email, valuta))
-    mysql.connection.commit()
-    cursor.close()
+    isplataBankovniRacun(email, kolicina, valuta)
 
     povratnaVrednost = {'message': 'Isplata sa bankovnog racuna je uspesno prosla'}, 200
     return povratnaVrednost
+
+def isplataBankovniRacun(email, kolicina, valuta):
+
+    mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+    cursor = mydb.cursor()
+    cursor.execute("UPDATE racun SET iznos = iznos - %s  WHERE korisnik = %s and valuta = %s", (kolicina, email, valuta))
+    mysql.connection.commit()
+    cursor.close()
 
 @user_blueprint.route('/uplataNaSopstvenRacun', methods=['POST'])
 def uplataNaSopstvenRacun():
@@ -214,6 +243,14 @@ def getKorisnik(email: str) -> dict:
     cursor.close()
     return korisnik
 
+def getKorisnikForNit(email: str) -> dict:
+    mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+    cursor = mydb.cursor()
+    cursor.execute("SELECT * FROM korisnik WHERE email = %s", (email,))
+    korisnik = cursor.fetchone()
+    cursor.close()
+    return korisnik
+
 def getRacuni(email: str) -> dict:
 
 
@@ -223,6 +260,15 @@ def getRacuni(email: str) -> dict:
     cursor.close()
 
     return jsonify(racuni)
+
+def getRacunByKorisnikAndValuta(email: str, valuta: str) -> dict:
+    mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+    cursor = mydb.cursor()
+    cursor.execute("SELECT * FROM racun WHERE korisnik = %s AND valuta = %s", (email,valuta))
+    racun = cursor.fetchone()
+    cursor.close()
+
+    return racun
 
 def getKartica(brojKartice: str) -> dict:
     cursor = mysql.connection.cursor()

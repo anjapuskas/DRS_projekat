@@ -1,4 +1,4 @@
-import multiprocessing
+from multiprocessing import Process
 from flask import Flask, render_template
 from flask_mysqldb import MySQL
 
@@ -15,8 +15,14 @@ mysql = MySQL(app)
 
 from blueprints.users import user_blueprint
 from blueprints.transactions import transaction_blueprint
+from blueprints.transactions import procesTransakcija
+from blueprints.transactions import queue
+
+process = Process(target=procesTransakcija, args=(queue,))
+
 
 if __name__ == '__main__':
     app.register_blueprint(user_blueprint, url_prefix='/api')
     app.register_blueprint(transaction_blueprint, url_prefix='/api')
+    process.start()
     app.run(port=8000)

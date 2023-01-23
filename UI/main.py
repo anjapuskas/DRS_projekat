@@ -196,7 +196,6 @@ def uplataNaRacun():
 
         if stanjeUBanci >= int(suma):
             stanjeNaRacunu += int(suma)
-            stanjeUBanci -= int(suma)
 
             uplataNaOnline(email, suma)
             isplataSaBankovnogRacunaPosiljaoca(email, suma, 'RSD')
@@ -226,22 +225,8 @@ def onlineRacun():
             poruka = "Morate uplatiti sumu vecu od 0."
             return render_template("OnlineRacun.html", errormsg=poruka)
 
-        if korisnik1["stanjeNaRacunu"] < 0:
-            poruka = "Nemate dovoljno novca na racunu."
-            return render_template("OnlineRacun.html", errormsg=poruka)
-
-        if korisnik == None:
-            poruka = "Korisnik  nema registrovan nalog."
-            return render_template("OnlineRacun.html", errormsg=poruka)
-
-        if float(kolicina) > korisnik1["stanjeNaRacunu"]:
-            poruka = "Nema dovoljno novca"
-            return render_template("OnlineRacun.html", errormsg=poruka)
-
 
         #USPJESNO  treba nam upit da se upisu pare u bazu
-
-        isplataSaRacunaPosiljaoca(email1, kolicina)
 
         korisnik2 = getKorisnik(email1)
 
@@ -287,14 +272,6 @@ def BankovniRacun():
             poruka = "Morate uplatiti sumu vecu od 0."
             return render_template("BankovniRacun.html", errormsg=poruka)
 
-        if postoji == 0:
-            poruka = "Ne posedujete novac u izabranoj valuti."
-            return render_template("BankovniRacun.html", errormsg=poruka)
-
-        if stanjeUBanci < 0:
-            poruka = "Nemate dovoljno novca u banci."
-            return render_template("BankovniRacun.html", errormsg=poruka)
-
         if len(brojKartice) != 16:
             poruka = "Niste unijeli dobar format broja racuna."
             return render_template("BankovniRacun.html", errormsg=poruka)
@@ -306,7 +283,6 @@ def BankovniRacun():
 
         #USPJESNO  treba nam upit da se upisu pare u bazu
 
-        isplataSaBankovnogRacunaPosiljaoca(email1, kolicina, valuta)
         korisnik2 = getKorisnik(email1)
 
         upisTransakcije(email1, emailPrimaoca, kolicina, valuta, 'BANK')
@@ -384,80 +360,6 @@ def SortirajTransakcije():
 
     return render_template("PregledTransakcija.html", transakcije=transakcije)
 
-
-
-
-@app.route("/PrihvatiTransakciju", methods=['GET', 'POST'])
-def prihvatiTransakciju():
-    req_data = request.form.to_dict(flat=False)
-
-    id = req_data["id"]
-
-    transakcija = getTransakcijaById(id)
-
-    emailPrimalac = transakcija["primalac"]
-    kolicina = transakcija["kolicina"]
-    valuta = transakcija["valuta"]
-    tip = transakcija["tip"]
-    korisnik = getKorisnik(emailPrimalac)
-
-
-
-    if transakcija["stanje"] == "OBRADJEN":
-        poruka = "Transakcija je vec obradjena."
-        transakcije = getTransakcije(emailPrimalac)
-        return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
-
-    if transakcija["stanje"] == "ODBIJEN":
-        poruka = "Transakcija je vec odbijena."
-        transakcije = getTransakcije(emailPrimalac)
-        return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
-
-    if (tip == 'NET'):
-        uplataNaOnline(emailPrimalac, kolicina)
-    else:
-        uplataNaBankovniRacun(emailPrimalac, kolicina, valuta)
-
-
-    IzmenaStanjeObradjen(id)
-    transakcije = getTransakcije(emailPrimalac)
-    return render_template("PregledTransakcija.html", transakcije=transakcije, korisnik = korisnik)
-
-@app.route("/OdbijTransakciju", methods=['GET', 'POST'])
-def odbijTransakciju():
-
-    req_data = request.form.to_dict(flat=False)
-
-    id = req_data["id"]
-
-    transakcija = getTransakcijaById(id)
-
-    emailPrimalac = transakcija["primalac"]
-    emailPosiljalac = transakcija["posiljalac"]
-    kolicina = transakcija["kolicina"]
-    valuta = transakcija["valuta"]
-    korisnik = getKorisnik(emailPrimalac)
-    tip = transakcija["tip"]
-
-    if transakcija["stanje"] == "OBRADJEN":
-        poruka = "Transakcija je vec obradjena."
-        transakcije = getTransakcije(emailPrimalac)
-        return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
-
-    if transakcija["stanje"] == "ODBIJEN":
-        poruka = "Transakcija je vec odbijena."
-        transakcije = getTransakcije(emailPrimalac)
-        return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
-
-    if (tip == 'NET'):
-        uplataNaOnline(emailPosiljalac, kolicina)
-    else:
-        uplataNaBankovniRacun(emailPosiljalac, kolicina, valuta)
-
-    IzmenaStanjeOdbijen(id)
-    transakcije = getTransakcije(emailPrimalac)
-    return render_template("PregledTransakcija.html", transakcije=transakcije, korisnik = korisnik)
-
 @app.route("/PrikaziPregledValuta", methods=['GET', 'POST'])
 def PrikaziPregledValuta():
     valute = getValuteList()
@@ -500,12 +402,6 @@ def getTransakcijeByPosiljalac(primalac, posiljalac: str) -> list:
     headers = {'Content-type' : 'application/json', 'Accept': 'text/plain'}
     body = json.dumps({'primalac': primalac, 'posiljalac': posiljalac})
     req = requests.get("http://127.0.0.1:8000/api/transakcijaPosiljalac", data = body, headers = headers)
-    return req.json()
-
-def getTransakcijaById(id: str) -> list:
-    headers = {'Content-type' : 'application/json', 'Accept': 'text/plain'}
-    body = json.dumps({'id': id})
-    req = requests.get("http://127.0.0.1:8000/api/transakcijaId", data = body, headers = headers)
     return req.json()
 
 
@@ -578,21 +474,6 @@ def isplataSaBankovnogRacunaPosiljaoca(email, kolicina, valuta):
     body = json.dumps(
         {'email': email, 'kolicina': kolicina, 'valuta': valuta})
     req = requests.post("http://127.0.0.1:8000/api/isplataBankovniRacun", data=body, headers=headers)
-    return req
-
-
-def  IzmenaStanjeObradjen(id):
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    body = json.dumps(
-        {'id': id})
-    req = requests.post("http://127.0.0.1:8000/api/izmenaStanjeObradjen", data=body, headers=headers)
-    return req
-
-def  IzmenaStanjeOdbijen(id):
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    body = json.dumps(
-        {'id': id})
-    req = requests.post("http://127.0.0.1:8000/api/izmenaStanjeOdbijen", data=body, headers=headers)
     return req
 
 def uplataNaSopstvenRacun(email, kolicina, valuta):
