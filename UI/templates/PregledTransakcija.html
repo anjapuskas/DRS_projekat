@@ -61,14 +61,6 @@
                 <td> {{t["kolicina"]}} </td>
                 <td> {{t["stanje"]}}</td>
                 <td> {{t["valuta"]}}</td>
-                <td>
-                    <form action="/PrihvatiTransakciju" method="post"><input type="submit" value=" Prihvati" >
-                        <input type="hidden" name="id" value="{{ t.id }}" />
-                    </form>
-                    <form action="/OdbijTransakciju" method="post"><input type="submit" value=" Odbij" >
-                        <input type="hidden" name="id" value="{{ t.id }}" />
-                    </form>
-                </td>
 
                 </tr>
             {% endfor %}

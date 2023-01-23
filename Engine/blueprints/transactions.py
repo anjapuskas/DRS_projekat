@@ -1,11 +1,16 @@
-from queue import Queue
+from multiprocessing import Queue
 
 import flask
 from flask import Blueprint, jsonify
+from .users import *
+import threading
+from time import sleep
 
 transaction_blueprint = Blueprint('transaction_blueprint', __name__)
 
 from Engine.main import mysql
+
+queue = Queue()
 
 @transaction_blueprint.route('/upisTransakcije', methods = ['POST'])
 def initTransaction():
@@ -16,9 +21,17 @@ def initTransaction():
     tip = flask.request.json['tip']
 
     cursor = mysql.connection.cursor()
-    cursor.execute(''' INSERT INTO transakcije (posiljalac, primalac, kolicina, valuta, tip) VALUES(%s, %s, %s, %s, %s)''', (posiljalac, primalac, kolicina, valuta, tip))
+    cursor.execute(''' INSERT INTO transakcije (posiljalac, primalac, kolicina, stanje, valuta, tip) VALUES(%s, %s, %s, %s, %s, %s)''', (posiljalac, primalac, kolicina, 'OBRADA', valuta, tip))
     mysql.connection.commit()
     cursor.close()
+
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT max(id) as id FROM transakcije WHERE primalac = %s AND posiljalac = %s", (primalac, posiljalac))
+    transakcijaId = cursor.fetchone()
+    cursor.close()
+
+    thread = threading.Thread(target=transkacijaNit, args=(transakcijaId,))
+    thread.start()
 
     retVal = {'message' : 'Transaction successfully initialized'}, 200
     return retVal
@@ -50,43 +63,161 @@ def getTransakcijeByPosiljalac():
 
     return jsonify(transakcija)
 
-@transaction_blueprint.route('/transakcijaId', methods = ['GET'])
-def getTransakcijaById():
-    content = flask.request.json
-    id = content['id']
+def  getTransakcijaById(id):
+    mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+    cursor = mydb.cursor()
+    cursor.execute("SELECT * FROM transakcije WHERE id = %s", (id,))
+    transakcija = cursor.fetchone()
+    cursor.close()
 
-    cursor = mysql.connection.cursor()
+    return transakcija
+
+def getTransakcijaByIdForNit(id):
+    mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+    cursor = mydb.cursor()
     cursor.execute("SELECT * FROM transakcije WHERE id = %s", (id,))
     transakcija = cursor.fetchone()
     cursor.close()
 
     return jsonify(transakcija)
 
-@transaction_blueprint.route('/izmenaStanjeObradjen', methods=['POST'])
-def izmenaStanjeObradjen():
-    content = flask.request.json
-    id = content['id']
+def izmenaStanjeObradjen(id):
 
-    cursor = mysql.connection.cursor()
+    mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+    cursor = mydb.cursor()
     cursor.execute(''' UPDATE transakcije SET stanje = 'OBRADJEN' WHERE id = %s ''', (id,))
-    mysql.connection.commit()
+    mydb.commit()
     cursor.close()
 
     povratnaVrednost = {'message' : 'Transkacija je uspesno obradjena'}, 200
     return povratnaVrednost
 
 
-@transaction_blueprint.route('/izmenaStanjeOdbijen', methods=['POST'])
-def IzmjenaStanjeOdbijen():
-    content = flask.request.json
-    id = content['id']
+def IzmjenaStanjeOdbijen(id):
 
-    cursor = mysql.connection.cursor()
+    mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+    cursor = mydb.cursor()
     cursor.execute(''' UPDATE transakcije SET stanje = 'ODBIJEN' WHERE id = %s ''', (id,))
-    mysql.connection.commit()
+    mydb.commit()
     cursor.close()
 
     povratnaVrednost = {'message': 'Transkacija je uspesno odbijena'}, 200
     return povratnaVrednost
+
+def transkacijaNit(transakcijaId):
+    sleep(10)
+
+    queue.put(transakcijaId)
+
+def procesTransakcija(queue: Queue):
+    while 1:
+        transakcijaId = 0
+        try:
+            transakcijaId = queue.get()
+        except KeyboardInterrupt:
+            break
+
+        transakcija = getTransakcijaById(transakcijaId["id"])
+        korisnikPosiljalacEmail = transakcija[1]
+        korisnikPrimaocEmail = transakcija[2]
+
+        if transakcija[6] == 'BANK':
+            valuta = transakcija[5]
+            kolicina = transakcija[3]
+
+            mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+            cursor = mydb.cursor()
+            cursor.execute("SELECT * FROM racun WHERE korisnik = %s AND valuta = %s", (korisnikPosiljalacEmail, valuta))
+            racunPosiljalac = cursor.fetchone()
+            cursor.close()
+
+            mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+            cursor = mydb.cursor()
+            cursor.execute("SELECT * FROM korisnik WHERE email = %s", (korisnikPrimaocEmail,))
+            korisnikPrimaoc = cursor.fetchone()
+            cursor.close()
+
+            if korisnikPrimaoc is None:
+                IzmjenaStanjeOdbijen(transakcijaId["id"])
+            elif int(racunPosiljalac[2]) < int(kolicina):
+                IzmjenaStanjeOdbijen(transakcijaId["id"])
+            else:
+
+                mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+                cursor = mydb.cursor()
+                cursor.execute("SELECT * FROM racun WHERE korisnik = %s AND valuta = %s", (korisnikPrimaocEmail, valuta))
+                racunPrimaoc = cursor.fetchone()
+                cursor.close()
+
+
+                mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+                cursor = mydb.cursor()
+                cursor.execute("UPDATE racun SET iznos = iznos - %s  WHERE korisnik = %s and valuta = %s",
+                               (kolicina, korisnikPosiljalacEmail, valuta))
+                mydb.commit()
+                cursor.close()
+#------------------------------------------------
+
+                if racunPrimaoc:
+                    mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+                    cursor = mydb.cursor()
+                    cursor.execute("UPDATE racun SET iznos = iznos + %s  WHERE korisnik = %s AND valuta = %s",
+                                   (kolicina, korisnikPrimaocEmail, valuta))
+                    mydb.commit()
+                    cursor.close()
+                else:
+                    mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+                    cursor = mydb.cursor()
+                    cursor.execute(''' INSERT INTO racun (korisnik, valuta, iznos) VALUES ( %s, %s, %s)''',
+                                   (korisnikPrimaocEmail, valuta, kolicina,))
+                    mydb.commit()
+                    cursor.close()
+
+
+                izmenaStanjeObradjen(transakcijaId["id"])
+        else :
+            kolicina = transakcija[3]
+
+            mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+            cursor = mydb.cursor()
+            cursor.execute("SELECT * FROM korisnik WHERE email = %s", (korisnikPrimaocEmail,))
+            korisnikPrimaoc = cursor.fetchone()
+            cursor.close()
+
+            mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+            cursor = mydb.cursor()
+            cursor.execute("SELECT * FROM korisnik WHERE email = %s", (korisnikPosiljalacEmail,))
+            korisnikPosiljalac = cursor.fetchone()
+            cursor.close()
+
+            if korisnikPrimaoc is None:
+                IzmjenaStanjeOdbijen(transakcijaId["id"])
+            elif int(korisnikPosiljalac[10]) < int(kolicina):
+                IzmjenaStanjeOdbijen(transakcijaId["id"])
+            else:
+
+                mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+                cursor = mydb.cursor()
+                cursor.execute("UPDATE korisnik SET stanjeNaRacunu = stanjeNaRacunu - %s  WHERE email = %s",
+                               (kolicina, korisnikPosiljalacEmail,))
+                mydb.commit()
+                cursor.close()
+#------------------------------------------
+                mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
+                cursor = mydb.cursor()
+                cursor.execute("UPDATE korisnik SET stanjeNaRacunu = stanjeNaRacunu + %s  WHERE email = %s",
+                               (kolicina, korisnikPrimaocEmail,))
+                mydb.commit()
+                cursor.close()
+
+                izmenaStanjeObradjen(transakcijaId["id"])
+
+
+
+
+
+
+
+
 
 
