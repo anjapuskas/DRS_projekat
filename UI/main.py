@@ -254,12 +254,10 @@ def onlineRacun():
         if email == email1:
             poruka = "Korisnik ne moze poslati sam sebi novac."
             return render_template("OnlineRacun.html", errormsg=poruka)
-        if korisnik == {}:
-            poruka = "Ne postoji korisnik kome se uplacuje novac."
-            return render_template("OnlineRacun.html", errormsg=poruka)
-        if korisnik1["stanjeNaRacunu"] < int(kolicina) :
-            poruka = "Nemate dovoljno novca na racunu."
-            return render_template("OnlineRacun.html", errormsg=poruka)
+        #if korisnik == {}:
+            #poruka = "Ne postoji korisnik kome se uplacuje novac."
+            #return render_template("OnlineRacun.html", errormsg=poruka)
+
 
 
         #USPJESNO  treba nam upit da se upisu pare u bazu
@@ -359,11 +357,11 @@ def zameniNovac():
 
         if float(kolicina) <= 0:
             poruka = "Morate uplatiti sumu vecu od 0."
-            return render_template("BankovniRacun.html", errormsg=poruka)
+            return render_template("Menjacnica.html", errormsg=poruka)
 
         if korisnik["stanjeNaRacunu"] < kolicina*kurs:
             poruka = "Nemate dovoljno novca na racunu."
-            return render_template("BankovniRacun.html", errormsg=poruka)
+            return render_template("Menjacnica.html", errormsg=poruka)
 
 
         uplataNaBankovniRacun(email, kolicina, valuta)
@@ -406,7 +404,7 @@ def SortirajTransakcije():
     if(sortType[0] == 'primalac'):
         transakcije.sort(key=lambda x: x["primalac"], reverse=reverse)
     if (sortType[0] == 'kolicina'):
-        transakcije.sort(key=lambda x: x["kolicina"], reverse=reverse)
+        transakcije.sort(key=lambda x: int(x["kolicina"]), reverse=reverse)
     if (sortType[0] == 'stanje'):
         transakcije.sort(key=lambda x: x["stanje"], reverse=reverse)
 
