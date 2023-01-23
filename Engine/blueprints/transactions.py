@@ -40,7 +40,6 @@ def initTransaction():
 def getTransakcije():
     content = flask.request.json
     posiljalac = content['posiljalac']
-    print(posiljalac )
 
     cursor = mysql.connection.cursor()
     cursor.execute("SELECT * FROM transakcije WHERE posiljalac = %s", (posiljalac,))
@@ -54,7 +53,6 @@ def getTransakcijeByPrimalac():
     content = flask.request.json
     primalac = content['primalac']
     posiljalac = content['posiljalac']
-    print(primalac)
 
     cursor = mysql.connection.cursor()
     cursor.execute("SELECT * FROM transakcije WHERE primalac = %s AND posiljalac = %s", (primalac, posiljalac))
@@ -105,7 +103,7 @@ def IzmjenaStanjeOdbijen(id):
     return povratnaVrednost
 
 def transkacijaNit(transakcijaId):
-    sleep(10)
+    sleep(30)
 
     queue.put(transakcijaId)
 
