@@ -534,9 +534,10 @@ def uplataNaSopstvenRacun(email, kolicina, valuta):
     return req
 
 def getValuteList():
+    headers = {'apikey': 'Qv3iJFQzumlmBR4RQyfIa7W0csfrJp7v'}
     req = requests.get(
-        "https://freecurrencyapi.net/api/v2/latest?apikey=57fbaed0-7177-11ec-a390-0d2dac4cb175&base_currency=RSD")
-    content = (req.json())['data']
+        "https://api.fastforex.io/fetch-all?from=RSD&api_key=a529e6583f-f34933dc88-royn1h", headers=headers)
+    content = (req.json())['results']
     valute = []
     # Converts every other currency in base currecy value
     for key, value in content.items():
