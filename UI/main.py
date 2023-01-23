@@ -245,7 +245,7 @@ def onlineRacun():
 
         korisnik2 = getKorisnik(email1)
 
-        upisTransakcije(email1, email, kolicina, 'RSD')
+        upisTransakcije(email1, email, kolicina, 'RSD', 'NET')
 
         session["mogucaUplata"] = 0
         return render_template("Index.html", korisnik=korisnik2)
@@ -309,7 +309,7 @@ def BankovniRacun():
         isplataSaBankovnogRacunaPosiljaoca(email1, kolicina, valuta)
         korisnik2 = getKorisnik(email1)
 
-        upisTransakcije(email1, emailPrimaoca, kolicina, valuta)
+        upisTransakcije(email1, emailPrimaoca, kolicina, valuta, 'BANK')
 
         session["mogucaUplata"] = 0
         return render_template("Index.html", korisnik=korisnik2)
@@ -398,6 +398,7 @@ def prihvatiTransakciju():
     emailPrimalac = transakcija["primalac"]
     kolicina = transakcija["kolicina"]
     valuta = transakcija["valuta"]
+    tip = transakcija["tip"]
     korisnik = getKorisnik(emailPrimalac)
 
 
@@ -412,8 +413,11 @@ def prihvatiTransakciju():
         transakcije = getTransakcije(emailPrimalac)
         return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
 
+    if (tip == 'NET'):
+        uplataNaOnline(emailPrimalac, kolicina)
+    else:
+        uplataNaBankovniRacun(emailPrimalac, kolicina, valuta)
 
-    uplataNaBankovniRacun(emailPrimalac, kolicina, valuta)
 
     IzmenaStanjeObradjen(id)
     transakcije = getTransakcije(emailPrimalac)
@@ -433,6 +437,7 @@ def odbijTransakciju():
     kolicina = transakcija["kolicina"]
     valuta = transakcija["valuta"]
     korisnik = getKorisnik(emailPrimalac)
+    tip = transakcija["tip"]
 
     if transakcija["stanje"] == "OBRADJEN":
         poruka = "Transakcija je vec obradjena."
@@ -444,8 +449,10 @@ def odbijTransakciju():
         transakcije = getTransakcije(emailPrimalac)
         return render_template("PregledTransakcija.html", errormsg=poruka, transakcije=transakcije, korisnik = korisnik)
 
-
-    uplataNaBankovniRacun(emailPosiljalac, kolicina, valuta)
+    if (tip == 'NET'):
+        uplataNaOnline(emailPosiljalac, kolicina)
+    else:
+        uplataNaBankovniRacun(emailPosiljalac, kolicina, valuta)
 
     IzmenaStanjeOdbijen(id)
     transakcije = getTransakcije(emailPrimalac)
@@ -521,11 +528,11 @@ def povezivanjeKarticeiKorisnika(email : str, ime : str, brojKartice : str, datu
     req = requests.post("http://127.0.0.1:8000/api/povezivanjeKarticeKorisnik", data=body, headers=headers)
     return req
 
-def upisTransakcije( posiljalac, primalac, kolicina, valuta):
+def upisTransakcije( posiljalac, primalac, kolicina, valuta, tip):
 
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     body = json.dumps(
-        {'posiljalac': posiljalac, 'primalac': primalac, 'kolicina': kolicina, 'valuta': valuta})
+        {'posiljalac': posiljalac, 'primalac': primalac, 'kolicina': kolicina, 'valuta': valuta, 'tip': tip})
     req = requests.post("http://127.0.0.1:8000/api/upisTransakcije", data=body, headers=headers)
     return req
 
