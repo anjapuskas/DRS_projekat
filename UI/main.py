@@ -109,11 +109,12 @@ def izmeniProfil():
     email = session["email"]
 
     korisnik = getKorisnik(email)
+    racuni = getRacuni(email)
 
     izmeniKorisnika(email, ime, prezime, adresa, grad, drzava, brojTelefona, lozinka)
     korisnik1 = getKorisnik(email)
     poruka = "Uspesna modifikacija"
-    return render_template("Index.html", errormsg = poruka, korisnik = korisnik1)
+    return render_template("Index.html", errormsg = poruka, korisnik = korisnik1, racuni = racuni)
 
 
 @app.route("/Login", methods=['GET', 'POST'])
@@ -150,6 +151,7 @@ def verifikacija():
     email = session["email"]
 
     korisnik = getKorisnik(email)
+    racuni = getRacuni(email)
     stanjeNaRacunu = korisnik["stanjeNaRacunu"]
 
     if korisnik != None and korisnik["ime"] == ime and len(kod) == 3 and len(brojKartice) == 16:
@@ -158,7 +160,7 @@ def verifikacija():
         povezivanjeKarticeiKorisnika(email, ime, brojKartice, datumIsteka, kod, stanjeNaRacunu)
         korisnik1 = getKorisnik(email)
 
-        return render_template("Index.html", korisnik = korisnik1)
+        return render_template("Index.html", korisnik = korisnik1, racuni = racuni)
     else:
         poruka = "Neuspesno logovanje"
         return render_template("Verifikacija.html", errormsg=poruka)
@@ -171,6 +173,7 @@ def uplataNaRacun():
     email = session["email"]
     korisnik = getKorisnik(email)
     kartica = getKartica(korisnik["brojKartice"])
+    racuni = getRacuni(email)
 
     if session["mogucaUplata"] == 1:
 
@@ -202,12 +205,13 @@ def uplataNaRacun():
 
             korisnik1 = getKorisnik(email)
             session["mogucaUplata"] = 0
-            return  render_template("/Index.html", korisnik = korisnik1)
+            racuni = getRacuni(email)
+            return  render_template("/Index.html", korisnik = korisnik1, racuni = racuni)
         else:
             poruka = "Nemate dovoljno novca na bankovnom racunu"
             return render_template("/Depozit.html", errormsg=poruka)
     else:
-        return render_template("/Index.html", korisnik=korisnik)
+        return render_template("/Index.html", korisnik=korisnik, racuni = racuni)
 
 
 
@@ -219,6 +223,7 @@ def onlineRacun():
     korisnik = getKorisnik(email) #onaj kome salje
     email1 = session["email"]
     korisnik1 = getKorisnik(email1)  #onaj ko salje
+    racuni = getRacuni(email1)
 
     if session["mogucaUplata"] == 1:
         if float(kolicina) <= 0:
@@ -233,9 +238,10 @@ def onlineRacun():
         upisTransakcije(email1, email, kolicina, 'RSD', 'NET')
 
         session["mogucaUplata"] = 0
-        return render_template("Index.html", korisnik=korisnik2)
+        racuni = getRacuni(email1)
+        return render_template("Index.html", korisnik=korisnik2, racuni = racuni)
     else:
-        return render_template("Index.html", korisnik=korisnik1)
+        return render_template("Index.html", korisnik=korisnik1, racuni = racuni)
 
 
 @app.route("/BankovniRacun", methods=['GET', 'POST'])
@@ -288,9 +294,10 @@ def BankovniRacun():
         upisTransakcije(email1, emailPrimaoca, kolicina, valuta, 'BANK')
 
         session["mogucaUplata"] = 0
-        return render_template("Index.html", korisnik=korisnik2)
+        racuni = getRacuni(email1)
+        return render_template("Index.html", korisnik=korisnik2, racuni = racuni)
     else:
-        return render_template("Index.html", korisnik=korisnik1)
+        return render_template("Index.html", korisnik=korisnik1, racuni = racuni)
 
 
 @app.route("/ZameniNovac", methods=['GET', 'POST'])
@@ -322,7 +329,8 @@ def zameniNovac():
     uplataNaBankovniRacun(email, kolicina, valuta)
     isplataSaRacunaPosiljaoca(email, kolicina*kurs)
 
-    return render_template("Index.html", korisnik=korisnik)
+    racuni = getRacuni(email)
+    return render_template("Index.html", korisnik=korisnik, racuni = racuni)
 
 
 @app.route("/PrikaziPregledTransakcija", methods=['GET', 'POST'])

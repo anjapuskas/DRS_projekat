@@ -139,18 +139,10 @@ def uplataOnline(kolicina, email):
 
 @user_blueprint.route('/isplataSaRacuna', methods=['POST'])
 def isplataSaOnlineRacuna():
-    kolicina = flask.request.json['kolicina']
+    kolicina = int(flask.request.json['kolicina'])
     email = flask.request.json['email']
 
-    isplataSaOnlineRacuna(kolicina, email)
-
-    povratnaVrednost = {'message': 'Online isplata je uspesno prosla'}, 200
-    return povratnaVrednost
-
-def isplataSaOnlineRacuna(kolicina, email):
-
-    mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
-    cursor = mydb.cursor()
+    cursor = mysql.connection.cursor()
     cursor.execute("UPDATE korisnik SET stanjeNaRacunu = stanjeNaRacunu - %s  WHERE email = %s", (kolicina, email,))
     mysql.connection.commit()
     cursor.close()
@@ -195,18 +187,13 @@ def isplataBankovniRacun():
     email = flask.request.json['email']
     valuta = flask.request.json['valuta']
 
-    isplataBankovniRacun(email, kolicina, valuta)
-
-    povratnaVrednost = {'message': 'Isplata sa bankovnog racuna je uspesno prosla'}, 200
-    return povratnaVrednost
-
-def isplataBankovniRacun(email, kolicina, valuta):
-
-    mydb = MySQLdb.connect(host="localhost", user="root", passwd="admin", db="baza_drs")
-    cursor = mydb.cursor()
+    cursor = mysql.connection.cursor()
     cursor.execute("UPDATE racun SET iznos = iznos - %s  WHERE korisnik = %s and valuta = %s", (kolicina, email, valuta))
     mysql.connection.commit()
     cursor.close()
+
+    povratnaVrednost = {'message': 'Isplata sa bankovnog racuna je uspesno prosla'}, 200
+    return povratnaVrednost
 
 @user_blueprint.route('/uplataNaSopstvenRacun', methods=['POST'])
 def uplataNaSopstvenRacun():
